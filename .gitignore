@@ -27,3 +27,6 @@
 *.exe
 *.out
 *.app
+
+# Third party libraries
+third-party
