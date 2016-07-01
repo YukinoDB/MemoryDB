@@ -14,6 +14,14 @@
 		23C254DE1D25112A000B9159 /* libglog.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 23C254DA1D25112A000B9159 /* libglog.a */; };
 		23C254DF1D25112A000B9159 /* libgtest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 23C254DB1D25112A000B9159 /* libgtest.a */; };
 		23C254E01D25112A000B9159 /* libyuki.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 23C254DC1D25112A000B9159 /* libyuki.a */; };
+		23C254E51D25FE2C000B9159 /* rw_spin_lock-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254E41D25FE2C000B9159 /* rw_spin_lock-test.cc */; };
+		23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254E61D260891000B9159 /* rw_spin_lock.cc */; };
+		23C254EB1D2614FE000B9159 /* key-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254EA1D2614FE000B9159 /* key-test.cc */; };
+		23C254EC1D2614FE000B9159 /* key-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254EA1D2614FE000B9159 /* key-test.cc */; };
+		23C254EE1D264D97000B9159 /* key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254ED1D264D97000B9159 /* key.cc */; };
+		23C254EF1D264D97000B9159 /* key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254ED1D264D97000B9159 /* key.cc */; };
+		23C254FF1D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */; };
+		23C255001D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,6 +55,14 @@
 		23C254DA1D25112A000B9159 /* libglog.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libglog.a; path = "../third-party/libs/libglog.a"; sourceTree = "<group>"; };
 		23C254DB1D25112A000B9159 /* libgtest.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libgtest.a; path = "../third-party/libs/libgtest.a"; sourceTree = "<group>"; };
 		23C254DC1D25112A000B9159 /* libyuki.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libyuki.a; path = "../third-party/libs/libyuki.a"; sourceTree = "<group>"; };
+		23C254E31D25FDDB000B9159 /* rw_spin_lock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rw_spin_lock.h; sourceTree = "<group>"; };
+		23C254E41D25FE2C000B9159 /* rw_spin_lock-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "rw_spin_lock-test.cc"; path = "../src/rw_spin_lock-test.cc"; sourceTree = "<group>"; };
+		23C254E61D260891000B9159 /* rw_spin_lock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rw_spin_lock.cc; path = ../src/rw_spin_lock.cc; sourceTree = "<group>"; };
+		23C254E81D260F9F000B9159 /* cocurrent_hash_map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocurrent_hash_map.h; sourceTree = "<group>"; };
+		23C254E91D261379000B9159 /* key.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = key.h; sourceTree = "<group>"; };
+		23C254EA1D2614FE000B9159 /* key-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "key-test.cc"; sourceTree = "<group>"; };
+		23C254ED1D264D97000B9159 /* key.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = key.cc; sourceTree = "<group>"; };
+		23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cocurrent_hash_map.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,17 +113,24 @@
 		23C254BB1D250E2C000B9159 /* Header */ = {
 			isa = PBXGroup;
 			children = (
+				23C254E31D25FDDB000B9159 /* rw_spin_lock.h */,
+				23C254E81D260F9F000B9159 /* cocurrent_hash_map.h */,
+				23C254E91D261379000B9159 /* key.h */,
 			);
 			name = Header;
-			path = "memory-db";
+			path = ../src;
 			sourceTree = "<group>";
 		};
 		23C254C41D250EC2000B9159 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
 				23C254C61D250EE5000B9159 /* main.cc */,
+				23C254E61D260891000B9159 /* rw_spin_lock.cc */,
+				23C254ED1D264D97000B9159 /* key.cc */,
+				23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */,
 			);
 			name = Sources;
+			path = ../src;
 			sourceTree = "<group>";
 		};
 		23C254C51D250EC8000B9159 /* Tests */ = {
@@ -115,8 +138,11 @@
 			children = (
 				23C254D71D2510E0000B9159 /* sanity-test.cc */,
 				23C254D31D250F84000B9159 /* all-test-main.cc */,
+				23C254E41D25FE2C000B9159 /* rw_spin_lock-test.cc */,
+				23C254EA1D2614FE000B9159 /* key-test.cc */,
 			);
 			name = Tests;
+			path = ../src;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -196,7 +222,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C254EE1D264D97000B9159 /* key.cc in Sources */,
 				23C254C71D250EE5000B9159 /* main.cc in Sources */,
+				23C254FF1D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
+				23C254EB1D2614FE000B9159 /* key-test.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -204,7 +233,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C255001D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
+				23C254EC1D2614FE000B9159 /* key-test.cc in Sources */,
 				23C254D41D250F84000B9159 /* all-test-main.cc in Sources */,
+				23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */,
+				23C254EF1D264D97000B9159 /* key.cc in Sources */,
+				23C254E51D25FE2C000B9159 /* rw_spin_lock-test.cc in Sources */,
 				23C254D81D2510E0000B9159 /* sanity-test.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
