@@ -10,6 +10,7 @@ namespace yukino {
 class RWSpinLock {
 public:
     static const int32_t kLockBais;
+    static const int     kDefaultSpinCount;
 
     RWSpinLock()
         : spin_lock_(kLockBais) {}
@@ -28,7 +29,7 @@ private:
 class ReaderLock {
 public:
     ReaderLock(RWSpinLock *lock)
-        : ReaderLock(lock, 100000) {}
+        : ReaderLock(lock, RWSpinLock::kDefaultSpinCount) {}
 
     ReaderLock(RWSpinLock *lock, int spin_count)
         : lock_(lock) {
@@ -44,7 +45,7 @@ private:
 class WriterLock {
 public:
     WriterLock(RWSpinLock *lock)
-        : WriterLock(lock, 100000) {}
+        : WriterLock(lock, RWSpinLock::kDefaultSpinCount) {}
 
     WriterLock(RWSpinLock *lock, int spin_count)
         : lock_(lock) {

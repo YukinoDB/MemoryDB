@@ -32,6 +32,9 @@ struct KeyBoundle {
 
     static
     inline size_t PredictBoundleSize(yuki::SliceRef key, uint64_t version_number);
+
+    // The empty key
+    // static const KeyBoundle * const Empty;
 };
 
 static_assert(sizeof(KeyBoundle) == 1, "Key Boundle size must be 1 byte.");

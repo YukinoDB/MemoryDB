@@ -22,6 +22,10 @@
 		23C254EF1D264D97000B9159 /* key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254ED1D264D97000B9159 /* key.cc */; };
 		23C254FF1D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */; };
 		23C255001D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */; };
+		23C255031D280201000B9159 /* obj.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255021D280201000B9159 /* obj.cc */; };
+		23C255041D280201000B9159 /* obj.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255021D280201000B9159 /* obj.cc */; };
+		23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255051D280F0D000B9159 /* cocurrent_hash_map-test.cc */; };
+		23C255081D281143000B9159 /* libpcre.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 23C255071D281143000B9159 /* libpcre.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,6 +67,10 @@
 		23C254EA1D2614FE000B9159 /* key-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "key-test.cc"; sourceTree = "<group>"; };
 		23C254ED1D264D97000B9159 /* key.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = key.cc; sourceTree = "<group>"; };
 		23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cocurrent_hash_map.cc; sourceTree = "<group>"; };
+		23C255011D280156000B9159 /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
+		23C255021D280201000B9159 /* obj.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = obj.cc; sourceTree = "<group>"; };
+		23C255051D280F0D000B9159 /* cocurrent_hash_map-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "cocurrent_hash_map-test.cc"; sourceTree = "<group>"; };
+		23C255071D281143000B9159 /* libpcre.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libpcre.a; path = "../third-party/libs/libpcre.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C255081D281143000B9159 /* libpcre.a in Frameworks */,
 				23C254DD1D25112A000B9159 /* libgflags.a in Frameworks */,
 				23C254DE1D25112A000B9159 /* libglog.a in Frameworks */,
 				23C254DF1D25112A000B9159 /* libgtest.a in Frameworks */,
@@ -90,6 +99,7 @@
 		23C254B01D250E2C000B9159 = {
 			isa = PBXGroup;
 			children = (
+				23C255071D281143000B9159 /* libpcre.a */,
 				23C254D91D25112A000B9159 /* libgflags.a */,
 				23C254DA1D25112A000B9159 /* libglog.a */,
 				23C254DB1D25112A000B9159 /* libgtest.a */,
@@ -116,6 +126,7 @@
 				23C254E31D25FDDB000B9159 /* rw_spin_lock.h */,
 				23C254E81D260F9F000B9159 /* cocurrent_hash_map.h */,
 				23C254E91D261379000B9159 /* key.h */,
+				23C255011D280156000B9159 /* obj.h */,
 			);
 			name = Header;
 			path = ../src;
@@ -128,6 +139,7 @@
 				23C254E61D260891000B9159 /* rw_spin_lock.cc */,
 				23C254ED1D264D97000B9159 /* key.cc */,
 				23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */,
+				23C255021D280201000B9159 /* obj.cc */,
 			);
 			name = Sources;
 			path = ../src;
@@ -140,6 +152,7 @@
 				23C254D31D250F84000B9159 /* all-test-main.cc */,
 				23C254E41D25FE2C000B9159 /* rw_spin_lock-test.cc */,
 				23C254EA1D2614FE000B9159 /* key-test.cc */,
+				23C255051D280F0D000B9159 /* cocurrent_hash_map-test.cc */,
 			);
 			name = Tests;
 			path = ../src;
@@ -222,6 +235,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C255031D280201000B9159 /* obj.cc in Sources */,
 				23C254EE1D264D97000B9159 /* key.cc in Sources */,
 				23C254C71D250EE5000B9159 /* main.cc in Sources */,
 				23C254FF1D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
@@ -237,7 +251,9 @@
 				23C254EC1D2614FE000B9159 /* key-test.cc in Sources */,
 				23C254D41D250F84000B9159 /* all-test-main.cc in Sources */,
 				23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */,
+				23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */,
 				23C254EF1D264D97000B9159 /* key.cc in Sources */,
+				23C255041D280201000B9159 /* obj.cc in Sources */,
 				23C254E51D25FE2C000B9159 /* rw_spin_lock-test.cc in Sources */,
 				23C254D81D2510E0000B9159 /* sanity-test.cc in Sources */,
 			);
