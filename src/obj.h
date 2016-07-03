@@ -58,6 +58,15 @@ public:
 static_assert(sizeof(Obj) == sizeof(String), "Fixed String size.");
 static_assert(sizeof(Obj) == sizeof(Integer), "Fixed Integer size.");
 
+void ObjRelease(Obj *ob);
+
+inline Obj *ObjAddRef(Obj *ob) {
+    if (ob) {
+        ob->AddRef();
+    }
+    return ob;
+}
+
 inline void Obj::Release() {
     if (ref_count.fetch_and(1) == 0) {
         free(this);
