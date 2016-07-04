@@ -6,6 +6,7 @@
 #include "yuki/status.h"
 #include <atomic>
 #include <string.h>
+#include <pthread.h>
 
 namespace yukino {
 
@@ -23,18 +24,21 @@ public:
 
     struct Slot {
         RWSpinLock rwlock;
-        Node      *node;
+        //pthread_rwlock_t rwlock;
+        Node  *node;
     };
 
     CocurrentHashMap(int initial_size);
     ~CocurrentHashMap();
 
     yuki::Status Put(yuki::SliceRef key, uint64_t version_number, Obj *value);
-    yuki::Status Get(yuki::SliceRef key, Version *ver, Obj **value);
     bool Delete(yuki::SliceRef key);
 
-    Node *UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot, bool *rehash);
-    bool  UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot, bool *rehash);
+    yuki::Status Get(yuki::SliceRef key, Version *ver, Obj **value);
+    inline bool Exist(yuki::SliceRef key);
+
+    Node *UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot);
+    bool  UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot);
     Node *UnsafeFindRoom(yuki::SliceRef key, Slot *slot);
 
     inline Slot *Take(yuki::SliceRef key);
@@ -70,6 +74,7 @@ private:
     float balance_fator_;
     float balance_fator_down_;
     std::atomic<int> num_keys_;
+    std::atomic<int> rehash_;
     RWSpinLock gaint_lock_;
 };
 
@@ -84,29 +89,9 @@ inline void CocurrentHashMap::InitSlots(Slot *slots, int num_slots) {
     }
 }
 
-inline bool CocurrentHashMap::ExtendIfNeed(int num_keys) {
-    if (static_cast<float>(num_keys) / static_cast<float>(num_slots_) <=
-        balance_fator_) {
-        return false;
-    }
-    gaint_lock_.ReadUnlock();
-    auto rv = ResizeSlots(num_keys);
-    gaint_lock_.ReadLock(RWSpinLock::kDefaultSpinCount);
-    return rv;
-}
-
-inline bool CocurrentHashMap::ShrinkIfNeed(int num_keys) {
-    if (static_cast<float>(num_keys) / static_cast<float>(num_slots_) >=
-        balance_fator_down_) {
-        return false;
-    }
-    if (num_slots_ == min_num_slots_) {
-        return false;
-    }
-    gaint_lock_.ReadUnlock();
-    auto rv = ResizeSlots(num_keys);
-    gaint_lock_.ReadLock(RWSpinLock::kDefaultSpinCount);
-    return rv;
+inline bool CocurrentHashMap::Exist(yuki::SliceRef key) {
+    auto rv = Get(key, nullptr, nullptr);
+    return rv.Ok();
 }
 
 } // namespace yukino

@@ -1,6 +1,7 @@
 #ifndef YUKINO_RW_SPIN_LOCK_H_
 #define YUKINO_RW_SPIN_LOCK_H_
 
+#include "glog/logging.h"
 #include <stdint.h>
 #include <atomic>
 #include <thread>
@@ -15,11 +16,15 @@ public:
     RWSpinLock()
         : spin_lock_(kLockBais) {}
 
-    inline void ReadLock(int spin_count);
-    inline void ReadUnlock();
+    void ReadLock();
+    bool TryReadLock();
+    void WriteLock();
+    bool TryWriteLock();
 
-    inline void WriteLock(int spin_count);
-    inline void WriteUnlock();
+    void Unlock();
+
+    int num_readers() { return kLockBais - spin_lock_.load(); }
+    int num_writers() { return spin_lock_.load() == kLockBais ? 0 : 1; }
 
     const std::atomic<int32_t> &TEST_spin_lock() { return spin_lock_; }
 private:
@@ -29,14 +34,11 @@ private:
 class ReaderLock {
 public:
     ReaderLock(RWSpinLock *lock)
-        : ReaderLock(lock, RWSpinLock::kDefaultSpinCount) {}
-
-    ReaderLock(RWSpinLock *lock, int spin_count)
         : lock_(lock) {
-        lock_->ReadLock(spin_count);
+        lock_->ReadLock();
     }
 
-    ~ReaderLock() { lock_->ReadUnlock(); }
+    ~ReaderLock() { lock_->Unlock(); }
 
 private:
     RWSpinLock *lock_;
@@ -45,54 +47,17 @@ private:
 class WriterLock {
 public:
     WriterLock(RWSpinLock *lock)
-        : WriterLock(lock, RWSpinLock::kDefaultSpinCount) {}
-
-    WriterLock(RWSpinLock *lock, int spin_count)
         : lock_(lock) {
-        lock_->WriteLock(spin_count);
+        lock_->WriteLock();
     }
 
-    ~WriterLock() { lock_->WriteUnlock(); }
+    ~WriterLock() { lock_->Unlock(); }
     
 private:
     RWSpinLock *lock_;
 };
 
 static_assert(sizeof(RWSpinLock) == 4, "RWSpinLock too large");
-
-inline void RWSpinLock::ReadLock(int spin_count) {
-    while (std::atomic_load_explicit(&spin_lock_,
-                                     std::memory_order_acquire) <= 0) {
-        if (spin_count <= 0) {
-            std::this_thread::yield();
-        } else {
-            spin_count--;
-        }
-    }
-    std::atomic_fetch_sub_explicit(&spin_lock_, 1, std::memory_order_release);
-}
-
-inline void RWSpinLock::ReadUnlock() {
-    std::atomic_fetch_add_explicit(&spin_lock_, 1, std::memory_order_release);
-}
-
-inline void RWSpinLock::WriteLock(int spin_count) {
-    while (std::atomic_load_explicit(&spin_lock_,
-                                     std::memory_order_acquire) != kLockBais) {
-        if (spin_count <= 0) {
-            std::this_thread::yield();
-        } else {
-            spin_count--;
-        }
-    }
-    std::atomic_fetch_sub_explicit(&spin_lock_, kLockBais,
-                                   std::memory_order_release);
-}
-
-inline void RWSpinLock::WriteUnlock() {
-    std::atomic_fetch_add_explicit(&spin_lock_, kLockBais,
-                                   std::memory_order_release);
-}
 
 } // namespace yukino
 

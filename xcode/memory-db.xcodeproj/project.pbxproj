@@ -26,6 +26,7 @@
 		23C255041D280201000B9159 /* obj.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255021D280201000B9159 /* obj.cc */; };
 		23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255051D280F0D000B9159 /* cocurrent_hash_map-test.cc */; };
 		23C255081D281143000B9159 /* libpcre.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 23C255071D281143000B9159 /* libpcre.a */; };
+		23C2550A1D294DE4000B9159 /* obj-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255091D294DE4000B9159 /* obj-test.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -71,6 +72,7 @@
 		23C255021D280201000B9159 /* obj.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = obj.cc; sourceTree = "<group>"; };
 		23C255051D280F0D000B9159 /* cocurrent_hash_map-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "cocurrent_hash_map-test.cc"; sourceTree = "<group>"; };
 		23C255071D281143000B9159 /* libpcre.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libpcre.a; path = "../third-party/libs/libpcre.a"; sourceTree = "<group>"; };
+		23C255091D294DE4000B9159 /* obj-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "obj-test.cc"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +155,7 @@
 				23C254E41D25FE2C000B9159 /* rw_spin_lock-test.cc */,
 				23C254EA1D2614FE000B9159 /* key-test.cc */,
 				23C255051D280F0D000B9159 /* cocurrent_hash_map-test.cc */,
+				23C255091D294DE4000B9159 /* obj-test.cc */,
 			);
 			name = Tests;
 			path = ../src;
@@ -252,6 +255,7 @@
 				23C254D41D250F84000B9159 /* all-test-main.cc in Sources */,
 				23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */,
 				23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */,
+				23C2550A1D294DE4000B9159 /* obj-test.cc in Sources */,
 				23C254EF1D264D97000B9159 /* key.cc in Sources */,
 				23C255041D280201000B9159 /* obj.cc in Sources */,
 				23C254E51D25FE2C000B9159 /* rw_spin_lock-test.cc in Sources */,

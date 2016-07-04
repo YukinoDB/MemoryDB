@@ -19,6 +19,7 @@ CocurrentHashMap::CocurrentHashMap(int initial_size)
     , num_slots_(0)
     , min_num_slots_(initial_size)
     , num_keys_(0)
+    , rehash_(0)
     , balance_fator_(0.9f)
     , balance_fator_down_(0.2f) {
     if (initial_size <= 0) {
@@ -49,27 +50,25 @@ CocurrentHashMap::~CocurrentHashMap() {
 
 yuki::Status CocurrentHashMap::Put(yuki::SliceRef key, uint64_t version_number,
                                    Obj *value) {
+    auto num_keys = std::atomic_load_explicit(&num_keys_,
+                                              std::memory_order_acquire);
+    ExtendIfNeed(num_keys + 1);
+
     ReaderLock gaint(&gaint_lock_);
+    auto slot = Take(key);
 
-    Node *node = nullptr;
-    Slot *slot = nullptr;
-    bool rehash = false;
-    do {
-        slot = Take(key);
-        slot->rwlock.WriteLock(RWSpinLock::kDefaultSpinCount);
-        
-        node = UnsafeFindOrMakeRoom(key, slot, &rehash);
-        if (!node && !rehash) {
-            return yuki::Status::Errorf(yuki::Status::kCorruption,
-                                        "not enough memory.");
-        }
-    } while (rehash);
+    WriterLock scope(&slot->rwlock);
+    auto node = UnsafeFindOrMakeRoom(key, slot);
+    if (!node) {
+        return yuki::Status::Errorf(yuki::Status::kCorruption,
+                                    "not enough memory.");
+    }
 
-    if (!node->key) {
+
+    if (!DCHECK_NOTNULL(node)->key) {
         node->key = MakeKeyBoundle(key, 0, version_number);
     }
     if (!node->key) {
-        slot->rwlock.WriteUnlock();
         return yuki::Status::Errorf(yuki::Status::kCorruption,
                                     "not enough memory.");
     }
@@ -77,25 +76,28 @@ yuki::Status CocurrentHashMap::Put(yuki::SliceRef key, uint64_t version_number,
         ObjRelease(node->value);
         node->value = ObjAddRef(value);
     }
-    slot->rwlock.WriteUnlock();
     return yuki::Status::OK();
 }
 
 bool CocurrentHashMap::Delete(yuki::SliceRef key) {
-    auto slot = Take(key);
+    auto num_keys = std::atomic_load_explicit(&num_keys_,
+                                              std::memory_order_acquire);
+    ShrinkIfNeed(num_keys - 1);
 
     ReaderLock gaint(&gaint_lock_);
+
+    auto slot = Take(key);
     WriterLock scope(&slot->rwlock);
 
-    bool rehash = false;
-    return UnsafeDeleteRoom(key, slot, &rehash);
+    auto rv = UnsafeDeleteRoom(key, slot);
+    return rv;
 }
 
 yuki::Status CocurrentHashMap::Get(yuki::SliceRef key, Version *ver,
                                    Obj **value) {
+    ReaderLock gaint(&gaint_lock_);
     auto slot = Take(key);
 
-    ReaderLock gaint(&gaint_lock_);
     ReaderLock scope(&slot->rwlock);
     auto node = UnsafeFindRoom(key, slot);
     if (!node) {
@@ -108,12 +110,12 @@ yuki::Status CocurrentHashMap::Get(yuki::SliceRef key, Version *ver,
     if (value) {
         *value = ObjAddRef(node->value);
     }
+
     return yuki::Status::OK();
 }
 
 CocurrentHashMap::Node *
-CocurrentHashMap::UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot,
-                                       bool *rehash) {
+CocurrentHashMap::UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot) {
     Node stub;
     stub.next = slot->node;
     auto p = &stub;
@@ -126,15 +128,6 @@ CocurrentHashMap::UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot,
         node = node->next;
     }
     if (!node) {
-        auto num_keys = std::atomic_fetch_add_explicit(&num_keys_, 1,
-                                                       std::memory_order_release);
-        *rehash = ExtendIfNeed(num_keys);
-        if (*rehash) {
-            std::atomic_fetch_sub_explicit(&num_keys_, 1,
-                                           std::memory_order_release);
-            return nullptr;
-        }
-
         node = new Node;
         if (!node) {
             return nullptr;
@@ -143,14 +136,17 @@ CocurrentHashMap::UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot,
         node->key   = nullptr;
         node->value = nullptr;
         node->next  = nullptr;
+
+        std::atomic_fetch_add_explicit(&num_keys_, 1,
+                                       std::memory_order_release);
     }
     slot->node = stub.next;
     return node;
 }
 
-bool CocurrentHashMap::UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot,
-                                        bool *rehash) {
+bool CocurrentHashMap::UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot) {
     Node stub;
+    stub.key  = nullptr;
     stub.next = slot->node;
     auto p = &stub;
     auto node = slot->node;
@@ -166,13 +162,9 @@ bool CocurrentHashMap::UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot,
         free(p->key);
         ObjRelease(node->value);
         delete node;
-
-        auto num_keys = std::atomic_fetch_sub_explicit(&num_keys_, 1,
-                                                       std::memory_order_release);
-        *rehash = ShrinkIfNeed(num_keys);
-        return true;
     }
-    return false;
+    slot->node = stub.next;
+    return !!node;
 }
 
 CocurrentHashMap::Node *
@@ -187,9 +179,46 @@ CocurrentHashMap::UnsafeFindRoom(yuki::SliceRef key, Slot *slot) {
     return node;
 }
 
+bool CocurrentHashMap::ExtendIfNeed(int num_keys) {
+    gaint_lock_.ReadLock();
+    auto key_rate = static_cast<float>(num_keys) / static_cast<float>(num_slots_);
+    if (key_rate <= balance_fator_) {
+        gaint_lock_.Unlock();
+        return false;
+    }
+    gaint_lock_.Unlock();
+
+    return ResizeSlots(num_keys);
+}
+
+bool CocurrentHashMap::ShrinkIfNeed(int num_keys) {
+    gaint_lock_.ReadLock();
+    auto key_rate = static_cast<float>(num_keys) / static_cast<float>(num_slots_);
+    if (key_rate >= balance_fator_down_) {
+        gaint_lock_.Unlock();
+        return false;
+    }
+    if (num_slots_ == min_num_slots_) {
+        gaint_lock_.Unlock();
+        return false;
+    }
+    gaint_lock_.Unlock();
+    
+    return ResizeSlots(num_keys);
+}
+
 bool CocurrentHashMap::ResizeSlots(int num_keys) {
     DCHECK_GT(balance_fator_, balance_fator_down_);
-    WriterLock lock(&gaint_lock_);
+
+    WriterLock gaint(&gaint_lock_);
+    if (static_cast<float>(num_keys) / static_cast<float>(num_slots_) >=
+        balance_fator_down_ &&
+        static_cast<float>(num_keys) / static_cast<float>(num_slots_) <=
+        balance_fator_) {
+
+        return true;
+    }
+
     // fator mid down
     //   ^--->
     // num_keys / num_slots = mid_fator;

@@ -16,7 +16,7 @@ enum ObjTy: uint8_t {
 };
 
 struct Obj {
-    std::atomic<int32_t> ref_count;
+    std::atomic<int> ref_count;
     uint8_t raw;
 
     Obj(ObjTy ty) : ref_count(0), raw(ty) {}
@@ -26,6 +26,7 @@ struct Obj {
 
     void AddRef() { ref_count.fetch_add(1); }
     inline void Release();
+    inline int  RefCount();
 
     ObjTy type() const { return static_cast<ObjTy>(raw); }
 
@@ -55,6 +56,60 @@ public:
     static inline Integer *New(int64_t i);
 };
 
+template<class T>
+class Handle {
+public:
+    Handle() : Handle(nullptr) {}
+
+    explicit Handle(T *naked)
+        : naked_(naked) {
+        if (naked_) {
+            naked_->AddRef();
+        }
+    }
+
+    Handle(const Handle &other) : Handle(other.naked()) {}
+
+    Handle(Handle &&other)
+        : naked_(other.naked_) {
+        other.naked_ = nullptr;
+    }
+
+    ~Handle() {
+        if (naked_) {
+            naked_->Release();
+        }
+    }
+
+    void Swap(Handle<T> *other) {
+        auto tmp = naked_;
+        naked_ = other->naked_;
+        other->naked_ = tmp;
+    }
+
+    Handle<T> &operator = (const Handle<T> &other) {
+        Handle(other.naked_).Swap(this);
+        return *this;
+    }
+
+    Handle<T> &operator = (T *naked) {
+        Handle(naked).Swap(this);
+        return *this;
+    }
+
+    T *operator -> () const { return DCHECK_NOTNULL(naked_); }
+
+    T *get() const { return naked_; }
+
+    T **address() { return &naked_; }
+
+    int ref_count() { return naked_ ? naked_->RefCount(): 0; }
+
+
+private:
+    T *naked_;
+};
+
 static_assert(sizeof(Obj) == sizeof(String), "Fixed String size.");
 static_assert(sizeof(Obj) == sizeof(Integer), "Fixed Integer size.");
 
@@ -68,9 +123,14 @@ inline Obj *ObjAddRef(Obj *ob) {
 }
 
 inline void Obj::Release() {
-    if (ref_count.fetch_and(1) == 0) {
+    if (std::atomic_fetch_sub_explicit(&ref_count, 1,
+                                       std::memory_order_release) == 1) {
         free(this);
     }
+}
+
+inline int Obj::RefCount() {
+    return std::atomic_load_explicit(&ref_count, std::memory_order_acquire);
 }
 
 inline uint32_t String::size() const {
@@ -115,7 +175,6 @@ inline String *String::Build(yuki::SliceRef s, void *buf, size_t size) {
     auto raw  = &base->raw + 1;
     raw += yuki::Varint::Encode32(static_cast<uint32_t>(s.Length()), raw);
     memcpy(raw, s.Data(), s.Length());
-    base->AddRef();
     return static_cast<String *>(base);
 }
 
@@ -146,7 +205,6 @@ inline Integer *Integer::Build(int64_t i, void *buf, size_t size) {
     }
     auto base = new (buf) Obj(YKN_INTEGER);
     yuki::Varint::EncodeS64(i, &base->raw + 1);
-    base->AddRef();
     return static_cast<Integer *>(base);
 }
 
