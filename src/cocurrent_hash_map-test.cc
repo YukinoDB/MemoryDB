@@ -37,7 +37,7 @@ TEST_F(CocurrentHashMapTest, Sanity) {
     ASSERT_EQ(YKN_STRING, obj->type());
     auto str = static_cast<String *>(obj);
     ASSERT_EQ("Jake", str->data().ToString());
-    ObjRelease(obj);
+    ObjRelease(str);
 }
 
 TEST_F(CocurrentHashMapTest, Deletion) {
@@ -70,14 +70,10 @@ TEST_F(CocurrentHashMapTest, ResizeSlots) {
     map_->TEST_ResizeSlots(1);
     ASSERT_EQ(1023, map_->num_slots());
 
-    auto rv = map_->Get(yuki::Slice("1"), nullptr, nullptr);
-    EXPECT_TRUE(rv.Ok());
-    rv = map_->Get(yuki::Slice("2"), nullptr, nullptr);
-    EXPECT_TRUE(rv.Ok());
-    rv = map_->Get(yuki::Slice("3"), nullptr, nullptr);
-    EXPECT_TRUE(rv.Ok());
-    rv = map_->Get(yuki::Slice("4"), nullptr, nullptr);
-    EXPECT_TRUE(rv.Ok());
+    EXPECT_TRUE(map_->Exist(yuki::Slice("1")));
+    EXPECT_TRUE(map_->Exist(yuki::Slice("2")));
+    EXPECT_TRUE(map_->Exist(yuki::Slice("3")));
+    EXPECT_TRUE(map_->Exist(yuki::Slice("4")));
 }
 
 TEST_F(CocurrentHashMapTest, LargePut) {
@@ -105,7 +101,7 @@ TEST_F(CocurrentHashMapTest, LargePut) {
 }
 
 TEST_F(CocurrentHashMapTest, MutliThreadPutting) {
-    std::thread threads[2];
+    std::thread threads[8];
 
     for (int i = 0; i < arraysize(threads); i++) {
         threads[i] = std::move(std::thread([&] (int num) {
@@ -130,6 +126,73 @@ TEST_F(CocurrentHashMapTest, MutliThreadPutting) {
         auto key = yuki::Strings::Format("%d", i);
         EXPECT_TRUE(map_->Exist(yuki::Slice(key)));
     }
+}
+
+TEST_F(CocurrentHashMapTest, MutliThreadDeleting) {
+    const auto N = 1000;
+    std::thread threads[8];
+
+    for (int i = 0; i < arraysize(threads) * N; i++) {
+        auto key = yuki::Strings::Format("%d", i);
+        auto val = yuki::Strings::Format("<%d>", i);
+        auto rv = map_->Put(yuki::Slice(key), 0,
+                            String::New(yuki::Slice(val)));
+        ASSERT_TRUE(rv.Ok()) << "key:" << key << " val:" << val;
+    }
+
+    ASSERT_EQ(arraysize(threads) * N, map_->num_keys());
+
+    for (int i = 0; i < arraysize(threads); i++) {
+        threads[i] = std::move(std::thread([&] (int num) {
+            for (int j = num * 1000; j < (num + 1) * 1000; j++) {
+                auto key = yuki::Strings::Format("%d", j);
+                auto rv = map_->Delete(yuki::Slice(key));
+                ASSERT_TRUE(rv) << "key:" << key;
+            }
+        }, i));
+    }
+    for (int i = 0; i < arraysize(threads); i++) {
+        threads[i].join();
+    }
+
+    ASSERT_EQ(0, map_->num_keys());
+    ASSERT_EQ(1023, map_->num_slots());
+}
+
+TEST_F(CocurrentHashMapTest, MutliThreadGetting) {
+    const int N = 1000;
+    std::thread readers[8];
+
+    std::thread writer([&] () {
+        for (int i = 0; i < arraysize(readers) * N; i++) {
+            auto key = yuki::Strings::Format("%d", i);
+            auto val = yuki::Strings::Format("<%d>", i);
+            auto rv = map_->Put(yuki::Slice(key), 0,
+                                String::New(yuki::Slice(val)));
+            ASSERT_TRUE(rv.Ok()) << "key:" << key << " val:" << val;
+        }
+    });
+
+    std::atomic<int> hit(0);
+
+    for (int i = 0; i < arraysize(readers); i++) {
+        readers[i] = std::move(std::thread([&] () {
+            for (int j = 0; j < arraysize(readers) * N; j++) {
+                auto key = yuki::Strings::Format("%lu",
+                                                 rand() % arraysize(readers) * N);
+                if (map_->Exist(yuki::Slice(key))) {
+                    hit.fetch_add(1);
+                }
+            }
+        }));
+    }
+
+    writer.join();
+    for (auto i = 0; i < arraysize(readers); i++) {
+        readers[i].join();
+    }
+    EXPECT_GT(hit.load(), 0);
+
 }
 
 } // namespace yukino

@@ -46,6 +46,7 @@ CocurrentHashMap::~CocurrentHashMap() {
             delete node;
         }
     }
+    delete[] slots_;
 }
 
 yuki::Status CocurrentHashMap::Put(yuki::SliceRef key, uint64_t version_number,
@@ -89,8 +90,7 @@ bool CocurrentHashMap::Delete(yuki::SliceRef key) {
     auto slot = Take(key);
     WriterLock scope(&slot->rwlock);
 
-    auto rv = UnsafeDeleteRoom(key, slot);
-    return rv;
+    return UnsafeDeleteRoom(key, slot);
 }
 
 yuki::Status CocurrentHashMap::Get(yuki::SliceRef key, Version *ver,
@@ -133,9 +133,7 @@ CocurrentHashMap::UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot) {
             return nullptr;
         }
         p->next = node;
-        node->key   = nullptr;
-        node->value = nullptr;
-        node->next  = nullptr;
+        memset(node, 0, sizeof(*node));
 
         std::atomic_fetch_add_explicit(&num_keys_, 1,
                                        std::memory_order_release);
@@ -159,9 +157,12 @@ bool CocurrentHashMap::UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot) {
     }
     if (node) {
         p->next = node->next;
-        free(p->key);
+        free(node->key);
         ObjRelease(node->value);
         delete node;
+
+        std::atomic_fetch_sub_explicit(&num_keys_, 1,
+                                       std::memory_order_release);
     }
     slot->node = stub.next;
     return !!node;
