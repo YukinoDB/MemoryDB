@@ -1,35 +1,51 @@
 #include "configuration.h"
 #include "yuki/strings.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 namespace yukino {
 
-class Configuration::InputStream {
+class InputStream {
 public:
+    virtual ~InputStream() {}
+
     virtual bool ReadLine(std::string *line) = 0;
 
     virtual yuki::Status status() const = 0;
 };
 
-class BufferedInputStream : public Configuration::InputStream {
+class OutputStream {
+public:
+    virtual ~OutputStream() {}
+
+    virtual size_t Write(yuki::SliceRef buf) = 0;
+
+    virtual yuki::Status status() const = 0;
+
+    inline size_t Fprintf(const char *fmt, ...);
+};
+
+inline size_t OutputStream::Fprintf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    std::string buf(yuki::Strings::Vformat(fmt, ap));
+    va_end(ap);
+
+    return Write(yuki::Slice(buf));
+}
+
+class BufferedInputStream : public InputStream {
 public:
     BufferedInputStream(yuki::SliceRef input)
         : buf_(input.Data())
         , end_(input.Data() + input.Length()) {}
 
+    virtual ~BufferedInputStream() override {}
+
     virtual bool ReadLine(std::string *line) override {
         auto begin = buf_;
-        const char *newline = nullptr;
-        for (;;) {
-            newline = strchr(buf_, '\n');
-            if (!newline) {
-                break;
-            }
-            if (*begin == '#') {
-                begin = newline + 1;
-            } else {
-                break;
-            }
-        }
+        const char *newline = strchr(buf_, '\n');
+        line->clear();
         if (!newline) {
             line->assign(begin, end_ - begin);
             buf_ = end_;
@@ -47,6 +63,76 @@ public:
 private:
     const char *buf_;
     const char *end_;
+};
+
+class FileInputStream : public InputStream {
+public:
+    FileInputStream(FILE *fp)
+        : fp_(DCHECK_NOTNULL(fp)) {
+    }
+
+    virtual ~FileInputStream() override {}
+
+    virtual bool ReadLine(std::string *line) override {
+        line->clear();
+
+        int ch = getc(fp_);
+        while (ch != EOF && ch != '\n') {
+            line->append(1, ch);
+            ch = getc(fp_);
+        }
+        return ch != EOF;
+    }
+
+    virtual yuki::Status status() const override {
+        if (ferror(fp_) && !feof(fp_)) {
+            return yuki::Status::Errorf(yuki::Status::kSystemError, "io error");
+        } else {
+            return yuki::Status::OK();
+        }
+    }
+
+private:
+    FILE *fp_;
+};
+
+class BufferedOutputStream : public OutputStream {
+public:
+    BufferedOutputStream(std::string *buf) : buf_(buf) {}
+
+    virtual ~BufferedOutputStream() {}
+
+    virtual size_t Write(yuki::SliceRef buf) override {
+        buf_->append(buf.Data(), buf.Length());
+        return buf.Length();
+    }
+    
+    virtual yuki::Status status() const override {
+        return yuki::Status::OK();
+    }
+
+private:
+    std::string *buf_;
+};
+
+class FileOutputStream : public OutputStream {
+public:
+    FileOutputStream(FILE *fp) : fp_(DCHECK_NOTNULL(fp)) {}
+
+    virtual ~FileOutputStream() {}
+
+    virtual size_t Write(yuki::SliceRef buf) override {
+        return fwrite(buf.Data(), 1, buf.Length(), fp_);
+    }
+
+    virtual yuki::Status status() const override {
+        return ferror(fp_)
+        ? yuki::Status::Errorf(yuki::Status::kSystemError, "io error")
+        : yuki::Status::OK();
+    }
+
+private:
+    FILE *fp_;
 };
 
 template<class T>
@@ -138,12 +224,40 @@ struct ValueTraits<std::string> {
         if (buf.Empty()) {
             return false;
         }
-        value->assign(buf.Data(), buf.Length());
+        if (buf.Compare(yuki::Slice("\"\"", 2)) == 0) {
+            value->assign("");
+        } else {
+            value->assign(buf.Data(), buf.Length());
+        }
         return true;
     }
 
     static std::string ToString(const std::string &value) {
-        return value;
+        return value.empty() ? "\"\"" : value;
+    }
+};
+
+template<>
+struct ValueTraits<bool> {
+    static bool Parse(yuki::SliceRef buf, bool *value) {
+        if (buf.Compare(yuki::Slice("yes", 3)) == 0 ||
+            buf.Compare(yuki::Slice("true", 4)) == 0 ||
+            buf.Compare(yuki::Slice("on", 2)) == 0) {
+
+            *value = true;
+        } else if (buf.Compare(yuki::Slice("no", 2)) == 0 ||
+                   buf.Compare(yuki::Slice("false", 5)) == 0 ||
+                   buf.Compare(yuki::Slice("off", 3)) == 0) {
+
+            *value = false;
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    static std::string ToString(const bool &value) {
+        return value ? "yes" : "no";
     }
 };
 
@@ -169,16 +283,34 @@ yuki::Status Configuration::LoadBuffer(yuki::SliceRef buf) {
         return yuki::Status::Errorf(yuki::Status::kCorruption,
                                     "not enough memory");
     }
-    auto rv = LoadStream(input.get());
-    if (rv.Failed()) {
-        return rv;
-    }
-    return input->status();
+    return LoadStream(input.get());
 }
 
 yuki::Status Configuration::LoadFile(FILE *fp) {
+    std::unique_ptr<InputStream> input(new FileInputStream(fp));
+    if (!input.get()) {
+        return yuki::Status::Errorf(yuki::Status::kCorruption,
+                                    "not enough memory");
+    }
+    return LoadStream(input.get());
+}
 
-    return yuki::Status::OK();
+yuki::Status Configuration::RewriteBuffer(std::string *buf) const {
+    std::unique_ptr<OutputStream> output(new BufferedOutputStream(buf));
+    if (!output.get()) {
+        return yuki::Status::Errorf(yuki::Status::kCorruption,
+                                    "not enough memory");
+    }
+    return RewriteStream(output.get());
+}
+
+yuki::Status Configuration::RewriteFile(FILE *fp) const {
+    std::unique_ptr<OutputStream> output(new FileOutputStream(fp));
+    if (!output.get()) {
+        return yuki::Status::Errorf(yuki::Status::kCorruption,
+                                    "not enough memory");
+    }
+    return RewriteStream(output.get());
 }
 
 yuki::Status
@@ -263,6 +395,9 @@ yuki::Status Configuration::LoadStream(InputStream *input) {
 
     db_conf_.clear();
     while (input->ReadLine(&buf)) {
+        if (buf.empty() || buf[0] == '#') {
+            continue;
+        }
 
         parts.clear();
         auto rv = yuki::Strings::Split(buf.c_str(), "\\s+", &parts);
@@ -275,7 +410,40 @@ yuki::Status Configuration::LoadStream(InputStream *input) {
             return rv;
         }
     }
-    return input->status();
+    return yuki::Status::OK();
+}
+
+yuki::Status Configuration::RewriteStream(OutputStream *output) const {
+    output->Fprintf("# Generated by rewriting\n");
+
+#define DEF_REWRITE(name, type, default_value) \
+    output->Write(yuki::Slice(#name, sizeof(#name) - 1)); \
+    output->Write(yuki::Slice(" ", 1)); \
+    output->Write(yuki::Slice(ValueTraits<type>::ToString(name##_))); \
+    output->Write(yuki::Slice("\n", 1));
+    DECL_CONF_ITEMS(DEF_REWRITE)
+#undef DEF_REWRITE
+
+    output->Fprintf("## DBs conf : ##\n");
+    for (const auto &dbconf : db_conf_) {
+        switch (dbconf.type) {
+            case DB_HASH:
+            case DB_ORDER:
+                output->Fprintf("db %s %s %l\n",
+                                dbconf.type == DB_HASH ? "hash" : "order",
+                                dbconf.persistent ? "persistent" : "memory",
+                                dbconf.memory_limit);
+                break;
+
+            case DB_PAGE:
+                // TODO:
+                break;
+
+            default:
+                break;
+        }
+    }
+    return output->status();
 }
 
 } // namespace yukino

@@ -14,9 +14,12 @@ namespace yukino {
     _(data_dir,     std::string, "."        ) \
     _(daemonize,    bool,        false      ) \
     _(pid_file,     std::string, ""         ) \
-    _(num_workders, int,         4          ) \
+    _(num_workers,  int,         4          ) \
     _(auth,         bool,        false      ) \
     _(pass_digest,  std::string, ""         )
+
+class InputStream;
+class OutputStream;
 
 enum DBType {
     DB_HASH,  // hash map db
@@ -42,6 +45,9 @@ public:
     yuki::Status LoadBuffer(yuki::SliceRef buf);
     yuki::Status LoadFile(FILE *fp);
 
+    yuki::Status RewriteBuffer(std::string *buf) const;
+    yuki::Status RewriteFile(FILE *fp) const;
+
     yuki::Status ProcessConfItem(const std::vector<yuki::Slice> &args);
 
 #define DEF_ACCESS(name, type, defautl_value) \
@@ -54,9 +60,9 @@ public:
     size_t num_db_conf() const { return db_conf_.size(); }
     void set_db_conf(size_t i, const DBConf &conf) { db_conf_[i] = conf; }
 
-    class InputStream;
 private:
     yuki::Status LoadStream(InputStream *input);
+    yuki::Status RewriteStream(OutputStream *output) const;
 
 #define DEF_MEMBER(name, type, defautl_value) type name##_;
     DECL_CONF_ITEMS(DEF_MEMBER)
