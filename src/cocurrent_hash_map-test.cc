@@ -1,4 +1,5 @@
 #include "cocurrent_hash_map.h"
+#include "iterator.h"
 #include "key.h"
 #include "obj.h"
 #include "yuki/strings.h"
@@ -52,6 +53,19 @@ TEST_F(CocurrentHashMapTest, Deletion) {
     auto rv = map_->Get(yuki::Slice("id.1000"), nullptr, nullptr);
     EXPECT_TRUE(rv.Failed());
     EXPECT_EQ(yuki::Status::kNotFound, rv.Code());
+}
+
+TEST_F(CocurrentHashMapTest, Iterator) {
+    map_->Put(yuki::Slice("id.1000"), 0, String::New(yuki::Slice("Jake")));
+    map_->Put(yuki::Slice("id.1001"), 0, String::New(yuki::Slice("Jake")));
+    map_->Put(yuki::Slice("id.1002"), 0, String::New(yuki::Slice("Jake")));
+
+    int count = 0;
+    std::unique_ptr<Iterator> iter(map_->iterator());
+    for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+        count++;
+    }
+    EXPECT_EQ(3, count);
 }
 
 TEST_F(CocurrentHashMapTest, ResizeSlots) {

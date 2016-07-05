@@ -30,6 +30,8 @@
 		23C2550E1D2AA15F000B9159 /* ae.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C2550B1D2AA15F000B9159 /* ae.c */; };
 		23C2550F1D2AA15F000B9159 /* anet.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C2550C1D2AA15F000B9159 /* anet.c */; };
 		23C255101D2AA15F000B9159 /* zmalloc.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C2550D1D2AA15F000B9159 /* zmalloc.c */; };
+		23C255191D2AA808000B9159 /* iterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255181D2AA808000B9159 /* iterator.cc */; };
+		23C2551A1D2AA808000B9159 /* iterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255181D2AA808000B9159 /* iterator.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -85,6 +87,8 @@
 		23C255141D2AA16D000B9159 /* fmacros.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fmacros.h; sourceTree = "<group>"; };
 		23C255151D2AA16D000B9159 /* zmalloc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zmalloc.h; sourceTree = "<group>"; };
 		23C255161D2AA18E000B9159 /* server.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = server.h; sourceTree = "<group>"; };
+		23C255171D2AA24F000B9159 /* iterator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iterator.h; sourceTree = "<group>"; };
+		23C255181D2AA808000B9159 /* iterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iterator.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +151,7 @@
 				23C254E91D261379000B9159 /* key.h */,
 				23C255011D280156000B9159 /* obj.h */,
 				23C255161D2AA18E000B9159 /* server.h */,
+				23C255171D2AA24F000B9159 /* iterator.h */,
 			);
 			name = Header;
 			path = ../src;
@@ -163,6 +168,7 @@
 				23C254ED1D264D97000B9159 /* key.cc */,
 				23C254FE1D26C41E000B9159 /* cocurrent_hash_map.cc */,
 				23C255021D280201000B9159 /* obj.cc */,
+				23C255181D2AA808000B9159 /* iterator.cc */,
 			);
 			name = Sources;
 			path = ../src;
@@ -264,6 +270,7 @@
 				23C254C71D250EE5000B9159 /* main.cc in Sources */,
 				23C254FF1D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
 				23C254EB1D2614FE000B9159 /* key-test.cc in Sources */,
+				23C255191D2AA808000B9159 /* iterator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +285,7 @@
 				23C2550F1D2AA15F000B9159 /* anet.c in Sources */,
 				23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */,
 				23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */,
+				23C2551A1D2AA808000B9159 /* iterator.cc in Sources */,
 				23C2550A1D294DE4000B9159 /* obj-test.cc in Sources */,
 				23C254EF1D264D97000B9159 /* key.cc in Sources */,
 				23C255041D280201000B9159 /* obj.cc in Sources */,

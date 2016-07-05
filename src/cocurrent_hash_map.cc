@@ -1,15 +1,94 @@
 #include "cocurrent_hash_map.h"
+#include "iterator.h"
 #include "key.h"
 #include "obj.h"
 
 namespace yukino {
 
+namespace {
+
+class IteratorImpl : public Iterator {
+public:
+    typedef CocurrentHashMap::Slot Slot;
+    typedef CocurrentHashMap::Node Node;
+
+    IteratorImpl(RWSpinLock *rwlock, Slot *begin, Slot *end)
+        : rwlock_(DCHECK_NOTNULL(rwlock))
+        , begin_(DCHECK_NOTNULL(begin))
+        , end_(DCHECK_NOTNULL(end)) {
+        DCHECK_NE(begin, end);
+
+        rwlock_->ReadLock();
+    }
+
+    virtual ~IteratorImpl() override;
+    virtual bool Valid() const override;
+    virtual void SeekToFirst() override;
+    virtual void Next() override;
+    virtual yuki::Status status() const override;
+    virtual KeyBoundle *key() const override;
+    virtual Obj *value() const override;
+
+private:
+    RWSpinLock *rwlock_;
+    Slot *begin_;
+    Slot *end_;
+    Node *node_ = nullptr;
+    Slot *now_ = nullptr;
+};
+
+IteratorImpl::~IteratorImpl() {
+    DCHECK_NOTNULL(rwlock_)->Unlock();
+}
+
+bool IteratorImpl::Valid() const {
+    return node_ != nullptr;
+}
+
+void IteratorImpl::SeekToFirst() {
+    for (now_ = begin_; now_ < end_; now_++) {
+        if (now_->node) {
+            node_ = now_->node;
+            break;
+        }
+    }
+}
+
+void IteratorImpl::Next() {
+    DCHECK(Valid());
+
+    node_ = node_->next;
+    if (!node_) {
+        while (now_++ < end_) {
+            if (now_->node) {
+                node_ = now_->node;
+                break;
+            }
+        }
+    }
+}
+
+yuki::Status IteratorImpl::status() const {
+    return yuki::Status::OK();
+}
+
+KeyBoundle *IteratorImpl::key() const {
+    DCHECK(Valid());
+    return DCHECK_NOTNULL(node_->key);
+}
+
+Obj *IteratorImpl::value() const {
+    DCHECK(Valid());
+    return DCHECK_NOTNULL(node_->value);
+}
+
+} // namespace
+
 /*static*/ unsigned int CocurrentHashMap::Hash(const char *p, size_t n) {
-    // SDM hash
-    unsigned int hash = 0;
-    for (int i = 0; i < n; i++) {
-        // equivalent to: hash = 65599 * hash + (*str++);
-        hash = (*p++) + (hash << 6) + (hash << 16) - hash;
+    // JSHash
+    unsigned int hash = 1315423911;
+    for (size_t i = 0; i < n; i++) {
+        hash ^= ((hash << 5) + (*p++) + (hash >> 2));
     }
     return (hash & 0x7FFFFFFF);
 }
@@ -112,6 +191,28 @@ yuki::Status CocurrentHashMap::Get(yuki::SliceRef key, Version *ver,
     }
 
     return yuki::Status::OK();
+}
+
+yuki::Status
+CocurrentHashMap::Exec(yuki::SliceRef key,
+                       std::function<void (const Version &, Obj *)> proc) {
+    ReaderLock gaint(&gaint_lock_);
+    auto slot = Take(key);
+
+    ReaderLock scope(&slot->rwlock);
+    auto node = UnsafeFindRoom(key, slot);
+    if (!node) {
+        return yuki::Status::Errorf(yuki::Status::kNotFound, "key not found.");
+    }
+
+    proc(node->key->version(), ObjAddRef(node->value));
+    ObjRelease(node->value);
+
+    return yuki::Status::OK();
+}
+
+Iterator *CocurrentHashMap::iterator() {
+    return new IteratorImpl(&gaint_lock_, slots_, slots_ + num_slots_);
 }
 
 CocurrentHashMap::Node *

@@ -13,6 +13,7 @@ namespace yukino {
 struct Obj;
 struct KeyBoundle;
 struct Version;
+class Iterator;
 
 class CocurrentHashMap {
 public:
@@ -36,6 +37,11 @@ public:
 
     yuki::Status Get(yuki::SliceRef key, Version *ver, Obj **value);
     inline bool Exist(yuki::SliceRef key);
+
+    yuki::Status Exec(yuki::SliceRef key,
+                      std::function<void (const Version &, Obj *)> proc);
+
+    Iterator *iterator();
 
     Node *UnsafeFindOrMakeRoom(yuki::SliceRef key, Slot *slot);
     bool  UnsafeDeleteRoom(yuki::SliceRef key, Slot *slot);
