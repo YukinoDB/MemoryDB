@@ -1,10 +1,15 @@
 #include "client.h"
 #include "worker.h"
 #include "server.h"
+#include "db.h"
 #include "obj.h"
 #include "key.h"
+#include "configuration.h"
 #include "value_traits.h"
+#include "protocol.h"
+#include "iterator.h"
 #include "ae.h"
+#include "yuki/varint.h"
 #include "yuki/strings.h"
 #include <stdarg.h>
 
@@ -218,14 +223,30 @@ bool Client::ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced) {
 bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
                             const std::vector<Handle<Obj>> &args) {
     using yuki::Slice;
+    using yuki::Status;
 
-    if (cmd.Compare(Slice("SELECT", 6)) == 0) {
-        if (args.size() < 1) {
-            AddErrorReply("SELECT bad arguments number, expect 1, actual %z.",
-                          args.size());
-            return false;
+    auto db = worker_->server()->db(db_);
+    auto cmd_entry = ::yukino_command(cmd.Data(),
+                                      static_cast<unsigned>(cmd.Length()));
+    if (!cmd_entry) {
+        AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
+        return false;
+    }
+
+    if (cmd_entry->argc != 0) {
+        if (cmd_entry->argc > 0) {
+            if (args.size() < cmd_entry->argc) {
+                AddErrorReply("%s bad arguments number, expect 1, actual %lu.",
+                              cmd.ToString().c_str(), args.size());
+                return false;
+            }
+        } else {
+            // < 0
         }
+    }
 
+    switch (cmd_entry->code) {
+    case CMD_SELECT: {
         int db = 0;
         if (args[0]->type() == YKN_STRING) {
             auto str = static_cast<String*>(args[0].get());
@@ -242,9 +263,85 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
             return false;
         }
 
-        db_ = db; // TODO:
+        const auto num_db = worker_->server()->conf().num_db_conf();
+        if (db < 0 || db >= num_db) {
+            AddErrorReply("SELECT db out of range. [%d, %d]", 0, num_db);
+            return false;
+        }
+        db_ = db;
         AddStringReply(Slice("ok", 2));
-        return true;
+    } return true;
+
+    case CMD_GET: {
+        String *key = static_cast<String *>(args[0].get());
+        //auto rv = db->Put(key->data(), 0, args[1].get());
+        Obj *value = nullptr;
+        auto rv = db->Get(key->data(), nullptr, &value);
+        if (rv.Failed()) {
+
+            if (rv.Code() == Status::kNotFound) {
+                AddObjReply(nullptr);
+            } else {
+                AddErrorReply("SET fail: %s", rv.ToString().c_str());
+            }
+            return false;
+        }
+        
+        AddObjReply(value);
+    } return true;
+
+    case CMD_SET: {
+        String *key = static_cast<String *>(args[0].get());
+        auto rv = db->Put(key->data(), 0, args[1].get());
+        if (rv.Failed()) {
+            AddErrorReply("SET fail: %s", rv.ToString().c_str());
+            return false;
+        }
+        
+        AddStringReply(Slice("ok", 2));
+    } return true;
+
+    case CMD_DELETE: {
+        String *key = static_cast<String *>(args[0].get());
+        auto rv = db->Delete(key->data());
+        if (rv) {
+            AddIntegerReply(1);
+        } else {
+            AddIntegerReply(0);
+        }
+    } return true;
+
+    case CMD_AUTH: {
+        // TODO
+    } return true;
+
+    case CMD_KEYS: {
+        int64_t limit = 0;
+        if (args.size() > 0) {
+            if (!ObjCastIntIf(args[0].get(), &limit)) {
+                AddErrorReply("Bad type, expect integer.");
+                return false;
+            }
+        }
+
+        auto num_keys = db->num_keys();
+        if (limit <= 0) {
+            limit = num_keys;
+        }
+
+        AddArrayHead(limit < num_keys ? limit : num_keys);
+        std::unique_ptr<Iterator> iter(db->iterator());
+        for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+            if (limit-- <= 0) {
+                break;
+            }
+
+            AddStringReply(iter->key()->key());
+        }
+    } return true;
+
+    default:
+        break;
     }
 
     AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
@@ -271,22 +368,10 @@ void Client::AddErrorReply(const char *fmt, ...) {
         output_buf_[outpos_++] = '\n';
     } else {
         // TODO: binary protocol
+
     }
 }
 
-// ERROR
-// STRING
-// INTEGER
-// ARRAY
-//
-// ARRAY 2
-//   ARRAY 2
-//     STRING  name
-//     STRING  jake
-//   ARRAY 2
-//     STRING  id
-//     INTEGER 100
-//
 void Client::AddStringReply(yuki::SliceRef buf) {
     if (protocol_ == PROTO_TEXT) {
         auto len = yuki::Strings::Format("%lu", buf.Length());
@@ -308,10 +393,118 @@ void Client::AddStringReply(yuki::SliceRef buf) {
         output_buf_[outpos_++] = '\r';
         output_buf_[outpos_++] = '\n';
     } else {
-        // TODO: binary protocol
+        // [tag(1-byte)] [size(varint64)] [bytes]
+        auto size = 1;
+        size += yuki::Varint::Sizeof64(buf.Length());
+        size += buf.Length();
+
+        if (outpos_ + size > IO_BUF_SIZE) {
+            LOG(ERROR) << "output buffer full, data: " << buf.ToString();
+            return;
+        }
 
         CreateEventIfNeed();
+        output_buf_[outpos_++] = TYPE_STRING;
+        outpos_ += yuki::Varint::Encode64(buf.Length(),
+                            reinterpret_cast<uint8_t *>(&output_buf_[outpos_]));
+        memcpy(&output_buf_[outpos_], buf.Data(), buf.Length());
+        outpos_ += buf.Length();
     }
+}
+
+void Client::AddIntegerReply(int64_t value) {
+    if (protocol_ == PROTO_TEXT) {
+        // max int64_t
+        if (outpos_ + sizeof("-9223372036854775808") + 3 > IO_BUF_SIZE) {
+            LOG(ERROR) << "output buffer full!";
+            return;
+        }
+
+        CreateEventIfNeed();
+        snprintf(&output_buf_[outpos_], IO_BUF_SIZE, ":%" PRId64 "\r\n", value);
+        outpos_ += strlen(&output_buf_[outpos_]);
+    } else {
+        auto size = yuki::Varint::Sizeof64(value);
+        if (outpos_ + size > IO_BUF_SIZE) {
+            LOG(ERROR) << "output buffer full!";
+            return;
+        }
+
+        CreateEventIfNeed();
+        outpos_ += yuki::Varint::EncodeS64(value,
+                            reinterpret_cast<uint8_t *>(&output_buf_[outpos_]));
+    }
+}
+
+void Client::AddArrayHead(int64_t value) {
+    if (protocol_ == PROTO_TEXT) {
+        // *<array size>\r\n
+        auto size = sizeof("-9223372036854775808") + 3;
+        if (outpos_ + size > IO_BUF_SIZE) {
+            LOG(ERROR) << "output buffer full!";
+            return;
+        }
+
+        CreateEventIfNeed();
+        snprintf(&output_buf_[outpos_], IO_BUF_SIZE, "*%" PRId64 "\r\n", value);
+        outpos_ += strlen(&output_buf_[outpos_]);
+    } else {
+        auto size = yuki::Varint::Sizeof64(value) + 1;
+        if (outpos_ + size > IO_BUF_SIZE) {
+            LOG(ERROR) << "output buffer full!";
+            return;
+        }
+
+        CreateEventIfNeed();
+        output_buf_[outpos_++] = TYPE_ARRAY;
+        outpos_ += yuki::Varint::Encode64(value,
+                            reinterpret_cast<uint8_t *>(&output_buf_[outpos_]));
+    }
+}
+
+void Client::AddObjReply(Obj *ob) {
+    using yuki::Slice;
+
+    if (!ob) {
+        if (protocol_ == PROTO_TEXT) {
+            AddRawReply(Slice("$-1\r\n", 5));
+        } else {
+            AddRawReply(Slice("\0", 1));
+        }
+        return;
+    }
+
+    switch (ob->type()) {
+    case YKN_STRING:
+        AddStringReply(static_cast<String*>(ob)->data());
+        break;
+
+    case YKN_INTEGER:
+        AddIntegerReply(static_cast<Integer*>(ob)->data());
+        break;
+
+    default:
+        DLOG(FATAL) << "noreached";
+        break;
+    }
+}
+
+bool Client::AddRawReply(yuki::SliceRef buf) {
+    if (outpos_ + buf.Length() > IO_BUF_SIZE) {
+        LOG(ERROR) << "output buffer full!";
+        return false;
+    }
+
+    CreateEventIfNeed();
+    if (buf.Length() <= 16) {
+        for (size_t i = 0; i < buf.Length(); i++) {
+            output_buf_[outpos_++] = buf.Data()[i];
+        }
+    } else {
+        memcpy(&output_buf_[outpos_], buf.Data(), buf.Length());
+        outpos_ += buf.Length();
+    }
+    return true;
 }
 
 void Client::CreateEventIfNeed() {

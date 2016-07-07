@@ -122,6 +122,8 @@ inline Obj *ObjAddRef(Obj *ob) {
     return ob;
 }
 
+bool ObjCastIntIf(Obj *ob, int64_t *value);
+
 inline void Obj::Release() {
     if (std::atomic_fetch_sub_explicit(&ref_count, 1,
                                        std::memory_order_release) == 1) {

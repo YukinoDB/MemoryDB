@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    LOG(INFO) << "YukinoDB start.";
     server.Run();
     return 0;
 }

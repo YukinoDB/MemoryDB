@@ -2,6 +2,7 @@
 #define YUKINO_VALUE_TRAITS_H_
 
 #include "yuki/strings.h"
+#include <stdint.h>
 
 namespace yukino {
 
@@ -55,7 +56,7 @@ struct ValueTraits<int> {
 template<>
 struct ValueTraits<long> {
     static bool Parse(yuki::SliceRef buf, long *value) {
-        // longest int number: -2147483648
+        // longest int number: -9223372036854775808
         if (buf.Empty() || buf.Length() > sizeof("-9223372036854775808") - 1) {
             return false;
         }
@@ -85,6 +86,17 @@ struct ValueTraits<long> {
 
     static std::string ToString(const int &value) {
         return yuki::Strings::Format("%d", value);
+    }
+};
+
+template<>
+struct ValueTraits<long long> {
+    static bool Parse(yuki::SliceRef buf, long long *value) {
+        return ValueTraits<long>::Parse(buf, reinterpret_cast<long*>(value));
+    }
+
+    static std::string ToString(const long long &value) {
+        return yuki::Strings::Format("%lld", value);
     }
 };
 

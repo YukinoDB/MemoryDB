@@ -3,6 +3,7 @@
 
 #include "yuki/file_path.h"
 #include "yuki/slice.h"
+#include "glog/logging.h"
 #include <thread>
 #include <string>
 #include <memory>
@@ -11,6 +12,7 @@ struct aeEventLoop;
 
 namespace yukino {
 
+class DB;
 class Worker;
 class Configuration;
 
@@ -35,6 +37,8 @@ public:
 
     int num_events() const { return num_events_; }
 
+    DB *db(int i);
+
 private:
     static void HandleListenAccept(aeEventLoop *el, int fd, void *data,
                                    int mask);
@@ -48,7 +52,8 @@ private:
     yuki::FilePath conf_file_;
     std::unique_ptr<Configuration> conf_;
 
-    Worker *workers_;
+    DB **dbs_ = nullptr;
+    Worker *workers_ = nullptr;
 }; // class Server
 
 } // namespace yukino

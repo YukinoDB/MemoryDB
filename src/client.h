@@ -52,6 +52,10 @@ public:
 
     void AddErrorReply(const char *fmt, ...);
     void AddStringReply(yuki::SliceRef str);
+    void AddIntegerReply(int64_t value);
+    void AddObjReply(Obj *ob);
+    void AddArrayHead(int64_t size);
+    bool AddRawReply(yuki::SliceRef buf);
 
     void CreateEventIfNeed();
 

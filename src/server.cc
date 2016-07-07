@@ -1,5 +1,6 @@
 #include "server.h"
 #include "worker.h"
+#include "db.h"
 #include "configuration.h"
 #include "ae.h"
 #include "anet.h"
@@ -21,10 +22,36 @@ Server::~Server() {
 
     aeDeleteEventLoop(event_loop_);
     delete[] workers_;
+
+    for (int i = 0; i < conf().num_db_conf(); i++) {
+        delete dbs_[i];
+    }
+    delete[] dbs_;
 }
 
 yuki::Status Server::Init() {
     using yuki::Status;
+
+    if (conf().num_db_conf() > 0) {
+        dbs_ = new DB *[conf().num_db_conf()];
+        if (!dbs_) {
+            return Status::Errorf(Status::kSystemError, "not enough memory");
+        }
+
+        memset(dbs_, 0, sizeof(DB *) * conf().num_db_conf());
+        for (size_t i = 0; i < conf().num_db_conf(); i++) {
+            dbs_[i] = DB::New(conf().db_conf(i), conf().data_dir(),
+                              static_cast<int>(i));
+            if (!dbs_[i]) {
+                return Status::Errorf(Status::kSystemError,
+                                      "not enough memory");
+            }
+            auto rv = dbs_[i]->Open();
+            if (rv.Failed()) {
+                return rv;
+            }
+        }
+    }
 
     DCHECK(event_loop_ == nullptr);
     event_loop_ = aeCreateEventLoop(num_events_);
@@ -63,6 +90,13 @@ void Server::Run() {
     }
 
     aeMain(event_loop_);
+}
+
+DB *Server::db(int i) {
+    DCHECK_GE(i, 0);
+    DCHECK_LT(i, conf().num_db_conf());
+
+    return DCHECK_NOTNULL(dbs_[i]);
 }
 
 /*static*/

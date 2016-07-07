@@ -1,0 +1,16 @@
+%{
+#include "protocol.h"
+typedef struct command command;
+%}
+struct command {
+	const char *z;
+	enum CmdCode code;
+    int argc;
+};
+%%
+AUTH,   CMD_AUTH,   1
+SELECT, CMD_SELECT, 1
+GET,    CMD_GET,    1
+SET,    CMD_SET,    2
+DELETE, CMD_DELETE, 1
+KEYS,   CMD_KEYS,   0

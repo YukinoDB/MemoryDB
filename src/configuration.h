@@ -27,14 +27,14 @@ enum DBType {
     DB_PAGE,  // btree based page map db
 };
 
+struct DBConf {
+    DBType type;
+    bool   persistent;
+    long   memory_limit;
+};
+
 class Configuration {
 public:
-    struct DBConf {
-        DBType type;
-        bool   persistent;
-        long   memory_limit;
-    };
-
     Configuration();
     Configuration(const Configuration &) = delete;
     Configuration(Configuration &&) = delete;
