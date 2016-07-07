@@ -68,7 +68,7 @@ public:
         }
     }
 
-    Handle(const Handle &other) : Handle(other.naked()) {}
+    Handle(const Handle &other) : Handle(other.get()) {}
 
     Handle(Handle &&other)
         : naked_(other.naked_) {
