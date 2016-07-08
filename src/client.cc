@@ -220,6 +220,26 @@ bool Client::ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced) {
     return false;
 }
 
+#define APPEND_LOG() \
+    do { \
+        auto append_log_rv = db->AppendLog(cmd_entry->code, args); \
+        if (append_log_rv.Failed()) { \
+            AddErrorReply("%s append log fail: %s", cmd_entry->z, \
+                          append_log_rv.ToString().c_str()); \
+            return false; \
+        } \
+    } while (0)
+
+#define GET_KEY(key, index) \
+    String *key = nullptr; \
+    do { \
+        if (args[(index)]->type() != YKN_STRING) { \
+            AddErrorReply("%s bad key type, expected STRING.", cmd_entry->z); \
+            return false; \
+        } \
+        key = static_cast<String *>(args[(index)].get()); \
+    } while (0)
+
 bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
                             const std::vector<Handle<Obj>> &args) {
     using yuki::Slice;
@@ -292,6 +312,8 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
 
     case CMD_SET: {
         String *key = static_cast<String *>(args[0].get());
+
+        APPEND_LOG();
         auto rv = db->Put(key->data(), 0, args[1].get());
         if (rv.Failed()) {
             AddErrorReply("SET fail: %s", rv.ToString().c_str());
@@ -303,6 +325,8 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
 
     case CMD_DELETE: {
         String *key = static_cast<String *>(args[0].get());
+
+        APPEND_LOG();
         auto rv = db->Delete(key->data());
         if (rv) {
             AddIntegerReply(1);
@@ -340,12 +364,94 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
         }
     } return true;
 
+    case CMD_LIST: {
+        Handle<List> list(List::New());
+        if (!list.get()) {
+            AddErrorReply("LIST not enough memory");
+            return false;
+        }
+        for (int i = 1; i < args.size(); i++) {
+            list->stub()->InsertTail(args[i].get());
+        }
+        GET_KEY(key, 0);
+
+        APPEND_LOG();
+        auto rv = db->Put(key->data(), worker_->server()->current_milsces(),
+                          list.get());
+        if (rv.Failed()) {
+            AddErrorReply("LIST can not be created, %s", rv.ToString().c_str());
+            return false;
+        }
+        AddStringReply(Slice("ok", 2));
+    } return true;
+
+    case CMD_LPUSH:
+    case CMD_RPUSH: {
+        Handle<List> list;
+        GET_KEY(key, 0);
+
+        if (!GetList(key->data(), db, list.address())) {
+            return false;
+        }
+
+        APPEND_LOG();
+        for (int i = 1; i < args.size(); i++) {
+            if (cmd_entry->code == CMD_LPUSH) {
+                list->stub()->InsertHead(args[i].get());
+            } else {
+                list->stub()->InsertTail(args[i].get());
+            }
+        }
+        AddIntegerReply(list->stub()->size());
+    } return true;
+
+    case CMD_LPOP:
+    case CMD_RPOP: {
+        Handle<List> list;
+        GET_KEY(key, 0);
+
+        if (!GetList(key->data(), db, list.address())) {
+            return false;
+        }
+
+        APPEND_LOG();
+        Obj *value = nullptr;
+        if (cmd_entry->code == CMD_LPOP) {
+            list->stub()->PopHead(&value);
+        } else {
+            // TODO:
+        }
+        AddObjReply(value);
+    } return true;
+
     default:
         break;
     }
 
     AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
     return false;
+}
+
+bool Client::GetList(yuki::SliceRef key, DB *db, List **list) {
+    using yuki::Status;
+
+    Obj *value;
+    auto rv = db->Get(key, nullptr, &value);
+    if (rv.Failed()) {
+        if (rv.Code() == Status::kNotFound) {
+            AddObjReply(nullptr);
+        } else {
+            AddErrorReply("LIST operation error, %s", rv.ToString().c_str());
+        }
+        return false;
+    }
+    if (value->type() == YKN_LIST) {
+        AddErrorReply("Bad type, not a list");
+        return false;
+    }
+
+    *list = static_cast<List *>(value);
+    return true;
 }
 
 void Client::AddErrorReply(const char *fmt, ...) {

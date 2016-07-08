@@ -55,6 +55,7 @@
 		23C2553F1D2E8816000B9159 /* hash_db.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C2553D1D2E8816000B9159 /* hash_db.cc */; };
 		23C255421D2E8E68000B9159 /* commands.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C255411D2E8E68000B9159 /* commands.c */; };
 		23C255431D2E8E68000B9159 /* commands.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C255411D2E8E68000B9159 /* commands.c */; };
+		23C255471D2F45F4000B9159 /* lockfree_list-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255451D2F45F4000B9159 /* lockfree_list-test.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -129,6 +130,8 @@
 		23C2553D1D2E8816000B9159 /* hash_db.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hash_db.cc; sourceTree = "<group>"; };
 		23C255401D2E8BB6000B9159 /* protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = protocol.h; sourceTree = "<group>"; };
 		23C255411D2E8E68000B9159 /* commands.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = commands.c; sourceTree = "<group>"; };
+		23C255441D2F3F1D000B9159 /* lockfree_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lockfree_list.h; sourceTree = "<group>"; };
+		23C255451D2F45F4000B9159 /* lockfree_list-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "lockfree_list-test.cc"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -204,6 +207,7 @@
 				23C255381D2E5333000B9159 /* db.h */,
 				23C2553C1D2E87B8000B9159 /* hash_db.h */,
 				23C255401D2E8BB6000B9159 /* protocol.h */,
+				23C255441D2F3F1D000B9159 /* lockfree_list.h */,
 			);
 			name = Header;
 			path = ../src;
@@ -244,6 +248,7 @@
 				23C255091D294DE4000B9159 /* obj-test.cc */,
 				23C255221D2B65DC000B9159 /* configuration-test.cc */,
 				23C2552D1D2CDE2F000B9159 /* circular_buffer-test.cc */,
+				23C255451D2F45F4000B9159 /* lockfree_list-test.cc */,
 			);
 			name = Tests;
 			path = ../src;
@@ -369,6 +374,7 @@
 				23C255041D280201000B9159 /* obj.cc in Sources */,
 				23C255271D2CA7E5000B9159 /* worker.cc in Sources */,
 				23C255211D2B6270000B9159 /* configuration.cc in Sources */,
+				23C255471D2F45F4000B9159 /* lockfree_list-test.cc in Sources */,
 				23C254E51D25FE2C000B9159 /* rw_spin_lock-test.cc in Sources */,
 				23C2550E1D2AA15F000B9159 /* ae.c in Sources */,
 				23C254D81D2510E0000B9159 /* sanity-test.cc in Sources */,

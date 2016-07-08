@@ -16,6 +16,8 @@ public:
     virtual ~HashDB() override;
 
     virtual yuki::Status Open() override;
+    virtual yuki::Status
+    AppendLog(int code, const std::vector<Handle<Obj>> &args) override;
     virtual Iterator *iterator() override;
     virtual int num_keys() const override;
     virtual yuki::Status Put(yuki::SliceRef key, uint64_t version_number,

@@ -12,6 +12,8 @@ namespace yukino {
 
 class Worker;
 class Server;
+class DB;
+class List;
 
 class Client {
 public:
@@ -49,6 +51,8 @@ public:
 
     bool ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
                         const std::vector<Handle<Obj>> &args);
+
+    bool GetList(yuki::SliceRef key, DB *db, List **list);
 
     void AddErrorReply(const char *fmt, ...);
     void AddStringReply(yuki::SliceRef str);

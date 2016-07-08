@@ -1,6 +1,7 @@
 #ifndef YUKINO_OBJ_H_
 #define YUKINO_OBJ_H_
 
+#include "lockfree_list.h"
 #include "yuki/slice.h"
 #include "yuki/varint.h"
 #include "glog/logging.h"
@@ -13,6 +14,7 @@ namespace yukino {
 enum ObjTy: uint8_t {
     YKN_STRING,
     YKN_INTEGER,
+    YKN_LIST,
 };
 
 struct Obj {
@@ -32,6 +34,17 @@ struct Obj {
 
     const uint8_t *payload() const { return &raw + 1; }
 };
+
+void ObjRelease(Obj *ob);
+
+inline Obj *ObjAddRef(Obj *ob) {
+    if (ob) {
+        ob->AddRef();
+    }
+    return ob;
+}
+
+bool ObjCastIntIf(Obj *ob, int64_t *value);
 
 class String : public Obj {
 public:
@@ -54,6 +67,24 @@ public:
     static inline size_t PredictSize(int64_t i);
     static inline Integer *Build(int64_t i, void *buf, size_t size);
     static inline Integer *New(int64_t i);
+};
+
+struct ObjManaged {
+    void Grab(Obj *ob) { ObjAddRef(ob); }
+    void Drop(Obj *ob) { ObjRelease(ob); }
+};
+
+class List : public Obj {
+public:
+    typedef LockFreeList<Obj*, ObjManaged> Stub;
+
+    inline Stub *stub();
+
+    inline void Release();
+
+    static size_t PredictSize() { return sizeof(Stub) + sizeof(List); }
+    static inline List *Build(void *buf, size_t size);
+    static inline List *New();
 };
 
 template<class T>
@@ -112,17 +143,6 @@ private:
 
 static_assert(sizeof(Obj) == sizeof(String), "Fixed String size.");
 static_assert(sizeof(Obj) == sizeof(Integer), "Fixed Integer size.");
-
-void ObjRelease(Obj *ob);
-
-inline Obj *ObjAddRef(Obj *ob) {
-    if (ob) {
-        ob->AddRef();
-    }
-    return ob;
-}
-
-bool ObjCastIntIf(Obj *ob, int64_t *value);
 
 inline void Obj::Release() {
     if (std::atomic_fetch_sub_explicit(&ref_count, 1,
@@ -215,6 +235,37 @@ inline Integer *Integer::New(int64_t i) {
     auto size = PredictSize(i);
     auto buf  = malloc(size);
     return Build(i, buf, size);
+}
+
+inline List::Stub *List::stub() {
+    auto pv = static_cast<void *>(&raw);
+    return static_cast<Stub *>(pv);
+}
+
+inline void List::Release() {
+    if (std::atomic_fetch_sub_explicit(&ref_count, 1,
+                                       std::memory_order_release) == 1) {
+        stub()->~Stub();
+        free(this);
+    }
+}
+
+/*static*/
+inline List *List::Build(void *buf, size_t size) {
+    if (size < PredictSize()) {
+        return nullptr;
+    }
+
+    auto list = static_cast<List *>(buf);
+    new (&list->raw + 1) Stub();
+    return list;
+}
+
+/*static*/
+inline List *List::New() {
+    auto size = PredictSize();
+    auto buf  = malloc(size);
+    return Build(buf, size);
 }
 
 } // namespace yukino

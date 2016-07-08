@@ -144,7 +144,6 @@ yuki::Status CocurrentHashMap::Put(yuki::SliceRef key, uint64_t version_number,
                                     "not enough memory.");
     }
 
-
     if (!DCHECK_NOTNULL(node)->key) {
         node->key = MakeKeyBoundle(key, 0, version_number);
     }

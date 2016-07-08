@@ -9,13 +9,19 @@ enum CmdCode {
     CMD_AUTH,
     CMD_SELECT,
 
-    // table command:
+    // keys command:
     CMD_GET,
     CMD_KEYS,
     CMD_SET,
     CMD_DELETE,
 
-    
+    // lists command:
+    CMD_LIST,
+    CMD_LLEN,
+    CMD_LPUSH,
+    CMD_LPOP,
+    CMD_RPUSH,
+    CMD_RPOP,
 };
 
 // ERROR

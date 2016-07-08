@@ -40,12 +40,12 @@ struct command {
     int argc;
 };
 
-#define TOTAL_KEYWORDS 6
+#define TOTAL_KEYWORDS 12
 #define MIN_WORD_LENGTH 3
 #define MAX_WORD_LENGTH 6
 #define MIN_HASH_VALUE 0
-#define MAX_HASH_VALUE 10
-/* maximum key range = 11, duplicates = 0 */
+#define MAX_HASH_VALUE 30
+/* maximum key range = 31, duplicates = 0 */
 
 #ifdef __GNUC__
 __inline
@@ -60,34 +60,34 @@ hash (register const char *str, register unsigned int len)
 {
   static const unsigned char asso_values[] =
     {
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11,  4, 11, 11,  2, 11,
-      11,  2, 11, 11, 11,  0,  5, 11, 11, 11,
-      11, 11, 11,  5,  0, 11, 11, 11, 11,  0,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-      11, 11, 11, 11, 11, 11
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31,  3, 31, 31,  9, 31,
+       9,  4, 31, 31, 31,  4, 10, 15, 31, 31,
+       5, 31,  0, 15, 10, 10,  0, 31, 31, 31,
+       0, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31,
+      31, 31, 31, 31, 31, 31, 31
     };
-  return asso_values[(unsigned char)str[2]] + asso_values[(unsigned char)str[0]];
+  return asso_values[(unsigned char)str[2]+1] + asso_values[(unsigned char)str[0]];
 }
 
 const struct command *
@@ -95,20 +95,34 @@ yukino_command (register const char *str, register unsigned int len)
 {
   static const struct command wordlist[] =
     {
+#line 21 "commands.gperf"
+      {"RPUSH",  CMD_RPUSH,  2},
+      {""}, {""}, {""},
 #line 16 "commands.gperf"
       {"KEYS",   CMD_KEYS,   0},
-      {""},
-#line 13 "commands.gperf"
-      {"GET",    CMD_GET,    1},
-      {""},
+#line 22 "commands.gperf"
+      {"RPOP",   CMD_RPOP,   1},
+      {""}, {""}, {""}, {""},
+#line 19 "commands.gperf"
+      {"LPUSH",  CMD_LPUSH,  2},
+      {""}, {""},
 #line 11 "commands.gperf"
       {"AUTH",   CMD_AUTH,   1},
-#line 14 "commands.gperf"
-      {"SET",    CMD_SET,    2},
-      {""},
+#line 13 "commands.gperf"
+      {"GET",    CMD_GET,    1},
+#line 20 "commands.gperf"
+      {"LPOP",   CMD_LPOP,   1},
+      {""}, {""}, {""},
+#line 18 "commands.gperf"
+      {"LLEN",   CMD_LLEN,   1},
+#line 17 "commands.gperf"
+      {"LIST",   CMD_LIST,   0},
+      {""}, {""}, {""},
 #line 15 "commands.gperf"
       {"DELETE", CMD_DELETE, 1},
-      {""}, {""},
+#line 14 "commands.gperf"
+      {"SET",    CMD_SET,    2},
+      {""}, {""}, {""}, {""},
 #line 12 "commands.gperf"
       {"SELECT", CMD_SELECT, 1}
     };

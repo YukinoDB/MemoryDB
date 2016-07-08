@@ -21,6 +21,13 @@ yuki::Status HashDB::Open() {
     return Status::OK();
 }
 
+yuki::Status
+HashDB::AppendLog(int code, const std::vector<Handle<Obj>> &args) {
+    using yuki::Status;
+
+    return Status::OK();
+}
+
 Iterator *HashDB::iterator() {
     return hash_map_.iterator();
 }

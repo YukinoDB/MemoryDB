@@ -39,6 +39,8 @@ public:
 
     DB *db(int i);
 
+    int64_t current_milsces() const;
+
 private:
     static void HandleListenAccept(aeEventLoop *el, int fd, void *data,
                                    int mask);

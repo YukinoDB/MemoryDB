@@ -4,6 +4,7 @@
 #include "configuration.h"
 #include "ae.h"
 #include "anet.h"
+#include <sys/time.h>
 
 namespace yukino {
 
@@ -97,6 +98,16 @@ DB *Server::db(int i) {
     DCHECK_LT(i, conf().num_db_conf());
 
     return DCHECK_NOTNULL(dbs_[i]);
+}
+
+int64_t Server::current_milsces() const {
+    struct timeval tv;
+    if (::gettimeofday(&tv, nullptr) != 0) {
+        PLOG(ERROR) << "can not get time!";
+        return 0;
+    }
+
+    return tv.tv_sec * 1000LL + tv.tv_usec / 1000LL;
 }
 
 /*static*/

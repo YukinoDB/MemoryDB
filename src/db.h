@@ -1,6 +1,7 @@
 #ifndef YUKINO_DB_H_
 #define YUKINO_DB_H_
 
+#include "obj.h"
 #include "yuki/slice.h"
 #include "yuki/status.h"
 #include <stdint.h>
@@ -21,6 +22,10 @@ public:
     virtual ~DB();
 
     virtual yuki::Status Open() = 0;
+
+    // Write-Ahead-Log
+    virtual yuki::Status AppendLog(int code,
+                                   const std::vector<Handle<Obj>> &args) = 0;
 
     virtual Iterator *iterator() = 0;
 

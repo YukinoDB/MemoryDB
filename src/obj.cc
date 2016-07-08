@@ -14,6 +14,10 @@ void ObjRelease(Obj *ob) {
         ob->Release();
         break;
 
+    case YKN_LIST:
+        static_cast<List *>(ob)->Release();
+        break;
+
     default:
         DLOG(FATAL) << "noreached";
         break;
