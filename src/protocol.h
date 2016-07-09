@@ -5,23 +5,24 @@
 namespace yukino {
 #endif
 
+#define DECL_COMMANDS(_) \
+    _(AUTH,   1) \
+    _(SELECT, 1) \
+    _(GET,    1) \
+    _(SET,    2) \
+    _(DELETE, 1) \
+    _(KEYS,   0) \
+    _(LIST,   0) \
+    _(LLEN,   1) \
+    _(LPUSH,  2) \
+    _(LPOP,   1) \
+    _(RPUSH,  2) \
+    _(RPOP,   1)
+
 enum CmdCode {
-    CMD_AUTH,
-    CMD_SELECT,
-
-    // keys command:
-    CMD_GET,
-    CMD_KEYS,
-    CMD_SET,
-    CMD_DELETE,
-
-    // lists command:
-    CMD_LIST,
-    CMD_LLEN,
-    CMD_LPUSH,
-    CMD_LPOP,
-    CMD_RPUSH,
-    CMD_RPOP,
+#define DEF_CMD_CODE(name, argc) CMD_##name,
+    DECL_COMMANDS(DEF_CMD_CODE)
+#undef DEF_CMD_CODE
 };
 
 // ERROR
@@ -60,6 +61,10 @@ struct command {
 
 extern "C"
 const struct command *yukino_command (const char *str, unsigned int len);
+
+namespace yukino {
+    typedef command Command;
+} // namespace yukino
 
 #endif // __cplusplus
 

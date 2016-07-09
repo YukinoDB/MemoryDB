@@ -15,6 +15,12 @@
 
 namespace yukino {
 
+const static Command kCommands[] = {
+#define DEF_CMD(name, argc) { #name, CMD_##name, argc },
+    DECL_COMMANDS(DEF_CMD)
+#undef  DEF_CMD
+};
+
 const char *strnchr(const char *z, int ch, size_t n) {
     while(n--) {
         if (*z == ch) {
@@ -111,9 +117,6 @@ yuki::Status Client::IncomingRead() {
             break;
 
         case STATE_AUTH:
-            // TODO:
-            break;
-
         case STATE_PROC:
             if (input_buf_.read_remain() == 0) {
                 break;
@@ -207,10 +210,16 @@ bool Client::ProcessTextInputBuffer(yuki::SliceRef buf, size_t *proced) {
         cmd = Slice(buf.Data(), newline - buf.Data());
     }
 
-    // SELECT 1
-    // GET a
-    // SET a b
-    auto rv = ProcessCommand(cmd, Slice(), args);
+    bool rv;
+    auto cmd_entry = ::yukino_command(cmd.Data(),
+                                      static_cast<unsigned>(cmd.Length()));
+    if (!cmd_entry) {
+        AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
+        rv = false;
+    } else {
+        rv = ProcessCommand(*cmd_entry, Slice(), args);
+    }
+
     *proced = (newline - buf.Data()) + 2; // 2 == sizeof("\r\n")
     return rv;
 }
@@ -222,9 +231,9 @@ bool Client::ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced) {
 
 #define APPEND_LOG() \
     do { \
-        auto append_log_rv = db->AppendLog(cmd_entry->code, args); \
+        auto append_log_rv = db->AppendLog(cmd.code, args); \
         if (append_log_rv.Failed()) { \
-            AddErrorReply("%s append log fail: %s", cmd_entry->z, \
+            AddErrorReply("%s append log fail: %s", cmd.z, \
                           append_log_rv.ToString().c_str()); \
             return false; \
         } \
@@ -234,30 +243,31 @@ bool Client::ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced) {
     String *key = nullptr; \
     do { \
         if (args[(index)]->type() != YKN_STRING) { \
-            AddErrorReply("%s bad key type, expected STRING.", cmd_entry->z); \
+            AddErrorReply("%s bad key type, expected STRING.", cmd.z); \
             return false; \
         } \
         key = static_cast<String *>(args[(index)].get()); \
     } while (0)
 
-bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
+bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
                             const std::vector<Handle<Obj>> &args) {
     using yuki::Slice;
     using yuki::Status;
 
     auto db = worker_->server()->db(db_);
-    auto cmd_entry = ::yukino_command(cmd.Data(),
-                                      static_cast<unsigned>(cmd.Length()));
-    if (!cmd_entry) {
-        AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
-        return false;
+
+    if (worker_->server()->conf().auth()) {
+        if (state_ == STATE_AUTH && cmd.code != CMD_AUTH) {
+            AddErrorReply("AUTH, not auth yet!");
+            return false;
+        }
     }
 
-    if (cmd_entry->argc != 0) {
-        if (cmd_entry->argc > 0) {
-            if (args.size() < cmd_entry->argc) {
+    if (cmd.argc != 0) {
+        if (cmd.argc > 0) {
+            if (args.size() < cmd.argc) {
                 AddErrorReply("%s bad arguments number, expect 1, actual %lu.",
-                              cmd.ToString().c_str(), args.size());
+                              cmd.z, args.size());
                 return false;
             }
         } else {
@@ -265,7 +275,7 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
         }
     }
 
-    switch (cmd_entry->code) {
+    switch (cmd.code) {
     case CMD_SELECT: {
         int db = 0;
         if (args[0]->type() == YKN_STRING) {
@@ -396,7 +406,7 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
 
         APPEND_LOG();
         for (int i = 1; i < args.size(); i++) {
-            if (cmd_entry->code == CMD_LPUSH) {
+            if (cmd.code == CMD_LPUSH) {
                 list->stub()->InsertHead(args[i].get());
             } else {
                 list->stub()->InsertTail(args[i].get());
@@ -416,19 +426,20 @@ bool Client::ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
 
         APPEND_LOG();
         Obj *value = nullptr;
-        if (cmd_entry->code == CMD_LPOP) {
+        if (cmd.code == CMD_LPOP) {
             list->stub()->PopHead(&value);
         } else {
-            // TODO:
+            list->stub()->PopTail(&value);
         }
         AddObjReply(value);
+        ObjRelease(value);
     } return true;
 
     default:
         break;
     }
 
-    AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
+    AddErrorReply("Command %s not support.", cmd.z);
     return false;
 }
 

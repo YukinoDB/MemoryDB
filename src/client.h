@@ -8,12 +8,15 @@
 #include <string>
 #include <vector>
 
+struct command;
+
 namespace yukino {
 
 class Worker;
 class Server;
 class DB;
 class List;
+typedef struct command Command;
 
 class Client {
 public:
@@ -49,7 +52,8 @@ public:
     bool ProcessTextInputBuffer(yuki::SliceRef buf, size_t *proced);
     bool ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced);
 
-    bool ProcessCommand(yuki::SliceRef cmd, yuki::SliceRef key,
+    bool ProcessCommand(const Command &cmd,
+                        yuki::SliceRef key,
                         const std::vector<Handle<Obj>> &args);
 
     bool GetList(yuki::SliceRef key, DB *db, List **list);

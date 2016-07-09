@@ -29,6 +29,8 @@ TEST(LockFreeListTest, OrderedInsert) {
     EXPECT_EQ(0, list.Take(0, &tmp)->value);
     EXPECT_EQ(1, list.Take(1, &tmp)->value);
     EXPECT_EQ(2, list.Take(2, &tmp)->value);
+    EXPECT_EQ(0, list.Take(-1, &tmp)->value);
+    EXPECT_EQ(2, tmp->value);
 }
 
 TEST(LockFreeListTest, MutliThreadInsertion) {
@@ -74,6 +76,10 @@ TEST(LockFreeListTest, MutliThreadPop) {
 
     writer.join(); deleter.join();
     ASSERT_EQ(0, list.size());
+}
+
+TEST(LockFreeListTest, NoBlockingQueue) {
+
 }
 
 } // namespace yukino

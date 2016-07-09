@@ -35,6 +35,7 @@ public:
     inline void InsertHead(T value);
 
     inline bool PopHead(T *value);
+    inline bool PopTail(T *value);
 
     inline void Delete(int index);
 
@@ -121,7 +122,29 @@ inline bool LockFreeList<T, M>::PopHead(T *value) {
     } while (!std::atomic_compare_exchange_strong(&head_->next, &node, right));
 
     *value = node->value;
-    managed_.Grab(node->value);
+    delete node;
+    return true;
+}
+
+template<class T, class M>
+inline bool LockFreeList<T, M>::PopTail(T *value) {
+    Node *left, *node, *right;
+
+    do {
+        node = head_->next.load();
+        left = head_;
+
+        if (node == tail_) {
+            return false;
+        }
+        while (node->next.load() != tail_) {
+            left = node;
+            node = node->next.load();
+        }
+        right = node->next.load();
+    } while (!std::atomic_compare_exchange_strong(&left->next, &node, right));
+
+    *value = node->value;
     delete node;
     return true;
 }
@@ -149,12 +172,9 @@ take_again:
     Node *prev = head_;
     Node *node = head_->next.load();
     if (index >= 0) {
-        while (index--) {
+        while (node != tail_ && index--) {
             prev = node;
             node = node->next.load();
-            if (node == tail_) {
-                break;
-            }
         }
     } else {
         while (node != tail_) {
