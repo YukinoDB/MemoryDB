@@ -238,7 +238,7 @@ inline Integer *Integer::New(int64_t i) {
 }
 
 inline List::Stub *List::stub() {
-    auto pv = static_cast<void *>(&raw);
+    auto pv = static_cast<void *>(&raw + 1);
     return static_cast<Stub *>(pv);
 }
 
