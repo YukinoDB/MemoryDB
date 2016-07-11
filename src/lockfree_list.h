@@ -1,6 +1,7 @@
 #ifndef YUKINO_LOCKFREE_LIST_H_
 #define YUKINO_LOCKFREE_LIST_H_
 
+#include "glog/logging.h"
 #include <atomic>
 #include <stdio.h>
 
@@ -20,6 +21,25 @@ public:
         std::atomic<Node *> next;
 
         Node() : value(0), next(nullptr) {}
+    };
+
+    class Iterator {
+    public:
+        Iterator(LockFreeList *list);
+        Iterator(Node *head, Node *tail);
+
+        inline void SeekToFirst();
+
+        inline bool Valid() const;
+
+        inline void Next();
+
+        inline const T &value() const;
+
+    private:
+        const Node * const head_;
+        const Node * const tail_;
+        const Node * node_;
     };
 
     LockFreeList() : LockFreeList(M()) {}
@@ -213,6 +233,39 @@ inline size_t LockFreeList<T, M>::size() const {
         n++;
     }
     return n;
+}
+
+template<class T, class M>
+inline LockFreeList<T, M>::Iterator::Iterator(LockFreeList<T, M> *list)
+    : Iterator(list->head_, list->tail_) {
+}
+
+template<class T, class M>
+inline LockFreeList<T, M>::Iterator::Iterator(Node *head, Node *tail)
+    : head_(head)
+    , tail_(tail)
+    , node_(nullptr) {
+}
+
+template<class T, class M>
+inline void LockFreeList<T, M>::Iterator::SeekToFirst() {
+    node_ = head_->next.load();
+}
+
+template<class T, class M>
+inline bool LockFreeList<T, M>::Iterator::Valid() const {
+    return node_ != tail_->next.load();
+}
+
+template<class T, class M>
+inline void LockFreeList<T, M>::Iterator::Next() {
+    DCHECK(Valid());
+    node_ = node_->next.load();
+}
+
+template<class T, class M>
+inline const T &LockFreeList<T, M>::Iterator::value() const {
+    return node_->value;
 }
 
 } // namespace yukino

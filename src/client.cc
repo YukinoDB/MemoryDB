@@ -70,13 +70,13 @@ yuki::Status Client::IncomingRead() {
                 readed += rv;
             }
         } else if (rv == 0) {
-            return Status::Errorf(Status::kSystemError, "connection lost");
+            return Status::Systemf("connection lost");
         } else {
             if (errno == EAGAIN) {
                 break;
             } else {
                 PLOG(ERROR) << "client read fail.";
-                return Status::Errorf(Status::kSystemError, "io error");
+                return Status::Systemf("io error");
             }
         }
     }
@@ -110,8 +110,7 @@ yuki::Status Client::IncomingRead() {
                           << " binary protocol setup.";
             } else {
                 AddErrorReply("bad protocol setting. (TXT/BIN)");
-                return Status::Errorf(Status::kCorruption,
-                                      "bad protocol setting");
+                return Status::Corruptionf("bad protocol setting");
             }
             AddStringReply(Slice("ok", 2));
             break;
@@ -158,7 +157,7 @@ yuki::Status Client::OutgoingWrite() {
             return Status::OK();
         } else {
             PLOG(ERROR) << "client write fail.";
-            return Status::Errorf(Status::kSystemError, "io error");
+            return Status::Systemf("io error");
         }
     }
 
@@ -224,6 +223,7 @@ bool Client::ProcessTextInputBuffer(yuki::SliceRef buf, size_t *proced) {
     return rv;
 }
 
+// [cmd(1-byte)] [array-tag(1 byte)] [number-of-elements(varint32)] [payload...]
 bool Client::ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced) {
     // TODO
     return false;
@@ -522,8 +522,7 @@ void Client::AddStringReply(yuki::SliceRef buf) {
 
         CreateEventIfNeed();
         output_buf_[outpos_++] = TYPE_STRING;
-        outpos_ += yuki::Varint::Encode64(buf.Length(),
-                            reinterpret_cast<uint8_t *>(&output_buf_[outpos_]));
+        outpos_ += yuki::Varint::Encode64(buf.Length(), &output_buf_[outpos_]);
         memcpy(&output_buf_[outpos_], buf.Data(), buf.Length());
         outpos_ += buf.Length();
     }
@@ -548,8 +547,7 @@ void Client::AddIntegerReply(int64_t value) {
         }
 
         CreateEventIfNeed();
-        outpos_ += yuki::Varint::EncodeS64(value,
-                            reinterpret_cast<uint8_t *>(&output_buf_[outpos_]));
+        outpos_ += yuki::Varint::EncodeS64(value, &output_buf_[outpos_]);
     }
 }
 
@@ -574,8 +572,7 @@ void Client::AddArrayHead(int64_t value) {
 
         CreateEventIfNeed();
         output_buf_[outpos_++] = TYPE_ARRAY;
-        outpos_ += yuki::Varint::Encode64(value,
-                            reinterpret_cast<uint8_t *>(&output_buf_[outpos_]));
+        outpos_ += yuki::Varint::Encode64(value, &output_buf_[outpos_]);
     }
 }
 

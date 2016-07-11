@@ -11,6 +11,9 @@
 
 namespace yukino {
 
+class SerializedOutputStream;
+class SerializedInputStream;
+
 enum ObjTy: uint8_t {
     YKN_STRING,
     YKN_INTEGER,
@@ -45,6 +48,8 @@ inline Obj *ObjAddRef(Obj *ob) {
 }
 
 bool ObjCastIntIf(Obj *ob, int64_t *value);
+size_t ObjSerialize(Obj *ob, SerializedOutputStream *serializer);
+Obj *ObjDeserialize(SerializedInputStream *deserializer);
 
 class String : public Obj {
 public:
@@ -85,60 +90,6 @@ public:
     static size_t PredictSize() { return sizeof(Stub) + sizeof(List); }
     static inline List *Build(void *buf, size_t size);
     static inline List *New();
-};
-
-template<class T>
-class Handle {
-public:
-    Handle() : Handle(nullptr) {}
-
-    explicit Handle(T *naked)
-        : naked_(naked) {
-        if (naked_) {
-            naked_->AddRef();
-        }
-    }
-
-    Handle(const Handle &other) : Handle(other.get()) {}
-
-    Handle(Handle &&other)
-        : naked_(other.naked_) {
-        other.naked_ = nullptr;
-    }
-
-    ~Handle() {
-        if (naked_) {
-            naked_->Release();
-        }
-    }
-
-    void Swap(Handle<T> *other) {
-        auto tmp = naked_;
-        naked_ = other->naked_;
-        other->naked_ = tmp;
-    }
-
-    Handle<T> &operator = (const Handle<T> &other) {
-        Handle(other.naked_).Swap(this);
-        return *this;
-    }
-
-    Handle<T> &operator = (T *naked) {
-        Handle(naked).Swap(this);
-        return *this;
-    }
-
-    T *operator -> () const { return DCHECK_NOTNULL(naked_); }
-
-    T *get() const { return naked_; }
-
-    T **address() { return &naked_; }
-
-    int ref_count() { return naked_ ? naked_->RefCount(): 0; }
-
-
-private:
-    T *naked_;
 };
 
 static_assert(sizeof(Obj) == sizeof(String), "Fixed String size.");

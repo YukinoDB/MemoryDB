@@ -2,7 +2,7 @@
 #define YUKINO_CLIENT_H_
 
 #include "circular_buffer.h"
-#include "obj.h"
+#include "handle.h"
 #include "yuki/status.h"
 #include "yuki/slice.h"
 #include <string>
@@ -12,6 +12,7 @@ struct command;
 
 namespace yukino {
 
+struct Obj;
 class Worker;
 class Server;
 class DB;

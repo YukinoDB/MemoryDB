@@ -130,6 +130,8 @@ CocurrentHashMap::~CocurrentHashMap() {
 
 yuki::Status CocurrentHashMap::Put(yuki::SliceRef key, uint64_t version_number,
                                    Obj *value) {
+    using yuki::Status;
+
     auto num_keys = std::atomic_load_explicit(&num_keys_,
                                               std::memory_order_acquire);
     ExtendIfNeed(num_keys + 1);
@@ -140,16 +142,14 @@ yuki::Status CocurrentHashMap::Put(yuki::SliceRef key, uint64_t version_number,
     WriterLock scope(&slot->rwlock);
     auto node = UnsafeFindOrMakeRoom(key, slot);
     if (!node) {
-        return yuki::Status::Errorf(yuki::Status::kCorruption,
-                                    "not enough memory.");
+        return Status::Systemf("not enough memory.");
     }
 
     if (!DCHECK_NOTNULL(node)->key) {
         node->key = MakeKeyBoundle(key, 0, version_number);
     }
     if (!node->key) {
-        return yuki::Status::Errorf(yuki::Status::kCorruption,
-                                    "not enough memory.");
+        return Status::Systemf("not enough memory.");
     }
     if (node->value != value) {
         ObjRelease(node->value);
@@ -173,13 +173,15 @@ bool CocurrentHashMap::Delete(yuki::SliceRef key) {
 
 yuki::Status CocurrentHashMap::Get(yuki::SliceRef key, Version *ver,
                                    Obj **value) {
+    using yuki::Status;
+
     ReaderLock gaint(&gaint_lock_);
     auto slot = Take(key);
 
     ReaderLock scope(&slot->rwlock);
     auto node = UnsafeFindRoom(key, slot);
     if (!node) {
-        return yuki::Status::Errorf(yuki::Status::kNotFound, "key not found.");
+        return Status::NotFoundf("key not found.");
     }
 
     if (ver) {
@@ -189,25 +191,27 @@ yuki::Status CocurrentHashMap::Get(yuki::SliceRef key, Version *ver,
         *value = ObjAddRef(node->value);
     }
 
-    return yuki::Status::OK();
+    return Status::OK();
 }
 
 yuki::Status
 CocurrentHashMap::Exec(yuki::SliceRef key,
                        std::function<void (const Version &, Obj *)> proc) {
+    using yuki::Status;
+
     ReaderLock gaint(&gaint_lock_);
     auto slot = Take(key);
 
     ReaderLock scope(&slot->rwlock);
     auto node = UnsafeFindRoom(key, slot);
     if (!node) {
-        return yuki::Status::Errorf(yuki::Status::kNotFound, "key not found.");
+        return Status::NotFoundf("key not found.");
     }
 
     proc(node->key->version(), ObjAddRef(node->value));
     ObjRelease(node->value);
 
-    return yuki::Status::OK();
+    return Status::OK();
 }
 
 Iterator *CocurrentHashMap::iterator() {

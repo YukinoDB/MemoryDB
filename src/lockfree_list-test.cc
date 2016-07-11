@@ -79,7 +79,38 @@ TEST(LockFreeListTest, MutliThreadPop) {
 }
 
 TEST(LockFreeListTest, NoBlockingQueue) {
+    LockFreeList<int> list;
 
+    auto const N = 1000;
+
+    std::thread producers[7];
+    for (int i = 0; i < arraysize(producers); i++) {
+        producers[i] = std::move(std::thread([&] (int id) {
+            for (int j = N * id; j < N * (id + 1); j++) {
+                list.InsertHead(j);
+            }
+        }, i));
+    }
+
+    int counter = 0;
+    int spin = 0;
+    std::thread consumer([&] () {
+        int value = 0;
+        do {
+            while (!list.PopTail(&value)) {
+                spin++;
+            }
+            counter++;
+        } while (value >= 0);
+    });
+
+    for (int i = 0; i < arraysize(producers); i++) {
+        producers[i].join();
+    }
+    list.InsertHead(-1);
+    consumer.join();
+
+    EXPECT_EQ(N * arraysize(producers) + 1, counter);
 }
 
 } // namespace yukino

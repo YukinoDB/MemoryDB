@@ -1,7 +1,7 @@
 #ifndef YUKINO_DB_H_
 #define YUKINO_DB_H_
 
-#include "obj.h"
+#include "handle.h"
 #include "yuki/slice.h"
 #include "yuki/status.h"
 #include <stdint.h>

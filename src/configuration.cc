@@ -1,140 +1,11 @@
 #include "configuration.h"
+#include "basic_io.h"
 #include "value_traits.h"
 #include "yuki/strings.h"
 #include <stdio.h>
 #include <stdarg.h>
 
 namespace yukino {
-
-class InputStream {
-public:
-    virtual ~InputStream() {}
-
-    virtual bool ReadLine(std::string *line) = 0;
-
-    virtual yuki::Status status() const = 0;
-};
-
-class OutputStream {
-public:
-    virtual ~OutputStream() {}
-
-    virtual size_t Write(yuki::SliceRef buf) = 0;
-
-    virtual yuki::Status status() const = 0;
-
-    inline size_t Fprintf(const char *fmt, ...);
-};
-
-inline size_t OutputStream::Fprintf(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    std::string buf(yuki::Strings::Vformat(fmt, ap));
-    va_end(ap);
-
-    return Write(yuki::Slice(buf));
-}
-
-class BufferedInputStream : public InputStream {
-public:
-    BufferedInputStream(yuki::SliceRef input)
-        : buf_(input.Data())
-        , end_(input.Data() + input.Length()) {}
-
-    virtual ~BufferedInputStream() override {}
-
-    virtual bool ReadLine(std::string *line) override {
-        auto begin = buf_;
-        const char *newline = strchr(buf_, '\n');
-        line->clear();
-        if (!newline) {
-            line->assign(begin, end_ - begin);
-            buf_ = end_;
-        } else {
-            line->assign(begin, newline - begin);
-            buf_ = newline + 1;
-        }
-        
-        return buf_ < end_;
-    }
-    
-    virtual yuki::Status status() const override {
-        return yuki::Status::OK();
-    }
-private:
-    const char *buf_;
-    const char *end_;
-};
-
-class FileInputStream : public InputStream {
-public:
-    FileInputStream(FILE *fp)
-        : fp_(DCHECK_NOTNULL(fp)) {
-    }
-
-    virtual ~FileInputStream() override {}
-
-    virtual bool ReadLine(std::string *line) override {
-        line->clear();
-
-        int ch = getc(fp_);
-        while (ch != EOF && ch != '\n') {
-            line->append(1, ch);
-            ch = getc(fp_);
-        }
-        return ch != EOF;
-    }
-
-    virtual yuki::Status status() const override {
-        if (ferror(fp_) && !feof(fp_)) {
-            return yuki::Status::Errorf(yuki::Status::kSystemError, "io error");
-        } else {
-            return yuki::Status::OK();
-        }
-    }
-
-private:
-    FILE *fp_;
-};
-
-class BufferedOutputStream : public OutputStream {
-public:
-    BufferedOutputStream(std::string *buf) : buf_(buf) {}
-
-    virtual ~BufferedOutputStream() {}
-
-    virtual size_t Write(yuki::SliceRef buf) override {
-        buf_->append(buf.Data(), buf.Length());
-        return buf.Length();
-    }
-    
-    virtual yuki::Status status() const override {
-        return yuki::Status::OK();
-    }
-
-private:
-    std::string *buf_;
-};
-
-class FileOutputStream : public OutputStream {
-public:
-    FileOutputStream(FILE *fp) : fp_(DCHECK_NOTNULL(fp)) {}
-
-    virtual ~FileOutputStream() {}
-
-    virtual size_t Write(yuki::SliceRef buf) override {
-        return fwrite(buf.Data(), 1, buf.Length(), fp_);
-    }
-
-    virtual yuki::Status status() const override {
-        return ferror(fp_)
-        ? yuki::Status::Errorf(yuki::Status::kSystemError, "io error")
-        : yuki::Status::OK();
-    }
-
-private:
-    FILE *fp_;
-};
 
 #define DEF_INIT(name, type, default_value) name##_(default_value),
 Configuration::Configuration()
@@ -152,7 +23,7 @@ void Configuration::Reset() {
 }
 
 yuki::Status Configuration::LoadBuffer(yuki::SliceRef buf) {
-    std::unique_ptr<InputStream> input(new BufferedInputStream(buf));
+    std::unique_ptr<InputStream> input(NewBufferedInputStream(buf));
     if (!input.get()) {
         return yuki::Status::Errorf(yuki::Status::kCorruption,
                                     "not enough memory");
@@ -161,7 +32,7 @@ yuki::Status Configuration::LoadBuffer(yuki::SliceRef buf) {
 }
 
 yuki::Status Configuration::LoadFile(FILE *fp) {
-    std::unique_ptr<InputStream> input(new FileInputStream(fp));
+    std::unique_ptr<InputStream> input(NewFileInputStream(fp));
     if (!input.get()) {
         return yuki::Status::Errorf(yuki::Status::kCorruption,
                                     "not enough memory");
@@ -170,7 +41,7 @@ yuki::Status Configuration::LoadFile(FILE *fp) {
 }
 
 yuki::Status Configuration::RewriteBuffer(std::string *buf) const {
-    std::unique_ptr<OutputStream> output(new BufferedOutputStream(buf));
+    std::unique_ptr<OutputStream> output(NewBufferedOutputStream(buf));
     if (!output.get()) {
         return yuki::Status::Errorf(yuki::Status::kCorruption,
                                     "not enough memory");
@@ -179,7 +50,7 @@ yuki::Status Configuration::RewriteBuffer(std::string *buf) const {
 }
 
 yuki::Status Configuration::RewriteFile(FILE *fp) const {
-    std::unique_ptr<OutputStream> output(new FileOutputStream(fp));
+    std::unique_ptr<OutputStream> output(NewFileOutputStream(fp));
     if (!output.get()) {
         return yuki::Status::Errorf(yuki::Status::kCorruption,
                                     "not enough memory");

@@ -1,4 +1,5 @@
 #include "obj.h"
+#include "handle.h"
 #include "gtest/gtest.h"
 
 namespace yukino {

@@ -56,6 +56,20 @@
 		23C255421D2E8E68000B9159 /* commands.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C255411D2E8E68000B9159 /* commands.c */; };
 		23C255431D2E8E68000B9159 /* commands.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C255411D2E8E68000B9159 /* commands.c */; };
 		23C255471D2F45F4000B9159 /* lockfree_list-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C255451D2F45F4000B9159 /* lockfree_list-test.cc */; };
+		23C618EA1D310F2500E788C1 /* lockfree_ring_buffer-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618E81D310F1100E788C1 /* lockfree_ring_buffer-test.cc */; };
+		23C618EE1D313D9300E788C1 /* basic_io.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618ED1D313D9300E788C1 /* basic_io.cc */; };
+		23C618EF1D313D9300E788C1 /* basic_io.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618ED1D313D9300E788C1 /* basic_io.cc */; };
+		23C618F21D31454800E788C1 /* bin_log.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618F11D31454800E788C1 /* bin_log.cc */; };
+		23C618F31D31454800E788C1 /* bin_log.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618F11D31454800E788C1 /* bin_log.cc */; };
+		23C618F61D314DE300E788C1 /* serialized_io.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618F51D314DE300E788C1 /* serialized_io.cc */; };
+		23C618F71D314DE300E788C1 /* serialized_io.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C618F51D314DE300E788C1 /* serialized_io.cc */; };
+		23C618FC1D32104500E788C1 /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C618FA1D32104500E788C1 /* crc32.c */; };
+		23C618FD1D32104500E788C1 /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C618FA1D32104500E788C1 /* crc32.c */; };
+		23C618FE1D32104500E788C1 /* md5.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C618FB1D32104500E788C1 /* md5.c */; };
+		23C618FF1D32104500E788C1 /* md5.c in Sources */ = {isa = PBXBuildFile; fileRef = 23C618FB1D32104500E788C1 /* md5.c */; };
+		23C619051D33359200E788C1 /* serialized_io-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619031D33359200E788C1 /* serialized_io-test.cc */; };
+		23C619081D337C2400E788C1 /* bin_log-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619071D337C2400E788C1 /* bin_log-test.cc */; };
+		23C619091D337C2400E788C1 /* bin_log-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619071D337C2400E788C1 /* bin_log-test.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -132,6 +146,20 @@
 		23C255411D2E8E68000B9159 /* commands.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = commands.c; sourceTree = "<group>"; };
 		23C255441D2F3F1D000B9159 /* lockfree_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lockfree_list.h; sourceTree = "<group>"; };
 		23C255451D2F45F4000B9159 /* lockfree_list-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "lockfree_list-test.cc"; sourceTree = "<group>"; };
+		23C618E81D310F1100E788C1 /* lockfree_ring_buffer-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "lockfree_ring_buffer-test.cc"; sourceTree = "<group>"; };
+		23C618EC1D313C3B00E788C1 /* basic_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = basic_io.h; sourceTree = "<group>"; };
+		23C618ED1D313D9300E788C1 /* basic_io.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = basic_io.cc; sourceTree = "<group>"; };
+		23C618F01D31429600E788C1 /* bin_log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bin_log.h; sourceTree = "<group>"; };
+		23C618F11D31454800E788C1 /* bin_log.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bin_log.cc; sourceTree = "<group>"; };
+		23C618F41D314D8B00E788C1 /* serialized_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = serialized_io.h; sourceTree = "<group>"; };
+		23C618F51D314DE300E788C1 /* serialized_io.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = serialized_io.cc; sourceTree = "<group>"; };
+		23C618F81D32103800E788C1 /* crc32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
+		23C618F91D32103800E788C1 /* md5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = md5.h; sourceTree = "<group>"; };
+		23C618FA1D32104500E788C1 /* crc32.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = crc32.c; sourceTree = "<group>"; };
+		23C618FB1D32104500E788C1 /* md5.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = md5.c; sourceTree = "<group>"; };
+		23C619031D33359200E788C1 /* serialized_io-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "serialized_io-test.cc"; sourceTree = "<group>"; };
+		23C619061D337AFA00E788C1 /* handle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = handle.h; sourceTree = "<group>"; };
+		23C619071D337C2400E788C1 /* bin_log-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "bin_log-test.cc"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -188,6 +216,8 @@
 		23C254BB1D250E2C000B9159 /* Header */ = {
 			isa = PBXGroup;
 			children = (
+				23C618F81D32103800E788C1 /* crc32.h */,
+				23C618F91D32103800E788C1 /* md5.h */,
 				23C255111D2AA16D000B9159 /* ae.h */,
 				23C255121D2AA16D000B9159 /* anet.h */,
 				23C255131D2AA16D000B9159 /* config.h */,
@@ -208,6 +238,10 @@
 				23C2553C1D2E87B8000B9159 /* hash_db.h */,
 				23C255401D2E8BB6000B9159 /* protocol.h */,
 				23C255441D2F3F1D000B9159 /* lockfree_list.h */,
+				23C618F01D31429600E788C1 /* bin_log.h */,
+				23C618F41D314D8B00E788C1 /* serialized_io.h */,
+				23C618EC1D313C3B00E788C1 /* basic_io.h */,
+				23C619061D337AFA00E788C1 /* handle.h */,
 			);
 			name = Header;
 			path = ../src;
@@ -216,6 +250,8 @@
 		23C254C41D250EC2000B9159 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				23C618FA1D32104500E788C1 /* crc32.c */,
+				23C618FB1D32104500E788C1 /* md5.c */,
 				23C255411D2E8E68000B9159 /* commands.c */,
 				23C2550B1D2AA15F000B9159 /* ae.c */,
 				23C2550C1D2AA15F000B9159 /* anet.c */,
@@ -232,6 +268,9 @@
 				23C2552A1D2CB989000B9159 /* client.cc */,
 				23C255391D2E54C8000B9159 /* db.cc */,
 				23C2553D1D2E8816000B9159 /* hash_db.cc */,
+				23C618ED1D313D9300E788C1 /* basic_io.cc */,
+				23C618F11D31454800E788C1 /* bin_log.cc */,
+				23C618F51D314DE300E788C1 /* serialized_io.cc */,
 			);
 			name = Sources;
 			path = ../src;
@@ -249,6 +288,9 @@
 				23C255221D2B65DC000B9159 /* configuration-test.cc */,
 				23C2552D1D2CDE2F000B9159 /* circular_buffer-test.cc */,
 				23C255451D2F45F4000B9159 /* lockfree_list-test.cc */,
+				23C618E81D310F1100E788C1 /* lockfree_ring_buffer-test.cc */,
+				23C619031D33359200E788C1 /* serialized_io-test.cc */,
+				23C619071D337C2400E788C1 /* bin_log-test.cc */,
 			);
 			name = Tests;
 			path = ../src;
@@ -331,16 +373,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C618FE1D32104500E788C1 /* md5.c in Sources */,
 				23C255341D2E4AA9000B9159 /* ae.c in Sources */,
+				23C618F61D314DE300E788C1 /* serialized_io.cc in Sources */,
 				23C255351D2E4AA9000B9159 /* anet.c in Sources */,
 				23C255361D2E4AA9000B9159 /* zmalloc.c in Sources */,
+				23C618EE1D313D9300E788C1 /* basic_io.cc in Sources */,
+				23C618F21D31454800E788C1 /* bin_log.cc in Sources */,
 				23C255371D2E4AA9000B9159 /* rw_spin_lock.cc in Sources */,
 				23C2552B1D2CB989000B9159 /* client.cc in Sources */,
 				23C255031D280201000B9159 /* obj.cc in Sources */,
 				23C254EE1D264D97000B9159 /* key.cc in Sources */,
 				23C254C71D250EE5000B9159 /* main.cc in Sources */,
+				23C619081D337C2400E788C1 /* bin_log-test.cc in Sources */,
 				23C254FF1D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
 				23C255261D2CA7E5000B9159 /* worker.cc in Sources */,
+				23C618FC1D32104500E788C1 /* crc32.c in Sources */,
 				23C255201D2B6270000B9159 /* configuration.cc in Sources */,
 				23C2551C1D2B5AD7000B9159 /* server.cc in Sources */,
 				23C2553E1D2E8816000B9159 /* hash_db.cc in Sources */,
@@ -354,18 +402,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23C618EF1D313D9300E788C1 /* basic_io.cc in Sources */,
+				23C618EA1D310F2500E788C1 /* lockfree_ring_buffer-test.cc in Sources */,
 				23C255001D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
 				23C255101D2AA15F000B9159 /* zmalloc.c in Sources */,
+				23C618F31D31454800E788C1 /* bin_log.cc in Sources */,
 				23C254EC1D2614FE000B9159 /* key-test.cc in Sources */,
+				23C618FF1D32104500E788C1 /* md5.c in Sources */,
 				23C254D41D250F84000B9159 /* all-test-main.cc in Sources */,
 				23C255231D2B65DC000B9159 /* configuration-test.cc in Sources */,
 				23C2551D1D2B5AD7000B9159 /* server.cc in Sources */,
+				23C619091D337C2400E788C1 /* bin_log-test.cc in Sources */,
 				23C2553B1D2E54C8000B9159 /* db.cc in Sources */,
 				23C2550F1D2AA15F000B9159 /* anet.c in Sources */,
 				23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */,
 				23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */,
 				23C2551A1D2AA808000B9159 /* iterator.cc in Sources */,
 				23C2552E1D2CDE2F000B9159 /* circular_buffer-test.cc in Sources */,
+				23C618F71D314DE300E788C1 /* serialized_io.cc in Sources */,
+				23C618FD1D32104500E788C1 /* crc32.c in Sources */,
 				23C2552C1D2CB989000B9159 /* client.cc in Sources */,
 				23C2550A1D294DE4000B9159 /* obj-test.cc in Sources */,
 				23C254EF1D264D97000B9159 /* key.cc in Sources */,
@@ -375,6 +430,7 @@
 				23C255271D2CA7E5000B9159 /* worker.cc in Sources */,
 				23C255211D2B6270000B9159 /* configuration.cc in Sources */,
 				23C255471D2F45F4000B9159 /* lockfree_list-test.cc in Sources */,
+				23C619051D33359200E788C1 /* serialized_io-test.cc in Sources */,
 				23C254E51D25FE2C000B9159 /* rw_spin_lock-test.cc in Sources */,
 				23C2550E1D2AA15F000B9159 /* ae.c in Sources */,
 				23C254D81D2510E0000B9159 /* sanity-test.cc in Sources */,
