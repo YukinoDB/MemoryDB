@@ -70,6 +70,8 @@
 		23C619051D33359200E788C1 /* serialized_io-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619031D33359200E788C1 /* serialized_io-test.cc */; };
 		23C619081D337C2400E788C1 /* bin_log-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619071D337C2400E788C1 /* bin_log-test.cc */; };
 		23C619091D337C2400E788C1 /* bin_log-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619071D337C2400E788C1 /* bin_log-test.cc */; };
+		23C6190C1D33938900E788C1 /* persistent.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C6190B1D33938900E788C1 /* persistent.cc */; };
+		23C6190D1D33938900E788C1 /* persistent.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C6190B1D33938900E788C1 /* persistent.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -160,6 +162,8 @@
 		23C619031D33359200E788C1 /* serialized_io-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "serialized_io-test.cc"; sourceTree = "<group>"; };
 		23C619061D337AFA00E788C1 /* handle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = handle.h; sourceTree = "<group>"; };
 		23C619071D337C2400E788C1 /* bin_log-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "bin_log-test.cc"; sourceTree = "<group>"; };
+		23C6190A1D33934F00E788C1 /* persistent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = persistent.h; sourceTree = "<group>"; };
+		23C6190B1D33938900E788C1 /* persistent.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = persistent.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -242,6 +246,7 @@
 				23C618F41D314D8B00E788C1 /* serialized_io.h */,
 				23C618EC1D313C3B00E788C1 /* basic_io.h */,
 				23C619061D337AFA00E788C1 /* handle.h */,
+				23C6190A1D33934F00E788C1 /* persistent.h */,
 			);
 			name = Header;
 			path = ../src;
@@ -271,6 +276,7 @@
 				23C618ED1D313D9300E788C1 /* basic_io.cc */,
 				23C618F11D31454800E788C1 /* bin_log.cc */,
 				23C618F51D314DE300E788C1 /* serialized_io.cc */,
+				23C6190B1D33938900E788C1 /* persistent.cc */,
 			);
 			name = Sources;
 			path = ../src;
@@ -394,6 +400,7 @@
 				23C2553E1D2E8816000B9159 /* hash_db.cc in Sources */,
 				23C255421D2E8E68000B9159 /* commands.c in Sources */,
 				23C255191D2AA808000B9159 /* iterator.cc in Sources */,
+				23C6190C1D33938900E788C1 /* persistent.cc in Sources */,
 				23C2553A1D2E54C8000B9159 /* db.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -414,6 +421,7 @@
 				23C2551D1D2B5AD7000B9159 /* server.cc in Sources */,
 				23C619091D337C2400E788C1 /* bin_log-test.cc in Sources */,
 				23C2553B1D2E54C8000B9159 /* db.cc in Sources */,
+				23C6190D1D33938900E788C1 /* persistent.cc in Sources */,
 				23C2550F1D2AA15F000B9159 /* anet.c in Sources */,
 				23C254E71D260891000B9159 /* rw_spin_lock.cc in Sources */,
 				23C255061D280F0D000B9159 /* cocurrent_hash_map-test.cc in Sources */,

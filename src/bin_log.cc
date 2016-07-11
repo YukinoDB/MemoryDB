@@ -16,22 +16,33 @@ BinLogWriter::~BinLogWriter() {
     }
 }
 
-// [code(byte)] [argc(varint32)] [payload]
-yuki::Status BinLogWriter::Append(CmdCode cmd_code,
+// [code(byte)] [version(varint64)] [argc(varint32)] [payload]
+yuki::Status BinLogWriter::Append(CmdCode cmd_code, int64_t version,
                                   const std::vector<Handle<Obj>> &args) {
     using yuki::Status;
     using yuki::Slice;
 
     SerializedOutputStream serializer(block_stream_, false);
 
-    serializer.WriteByte(static_cast<char>(cmd_code));
-    serializer.WriteInt32(static_cast<uint32_t>(args.size()));
+    written_bytes_ += serializer.WriteByte(static_cast<char>(cmd_code));
+    written_bytes_ += serializer.WriteSInt64(version);
+    written_bytes_ += serializer.WriteInt32(static_cast<uint32_t>(args.size()));
     for (const auto &obj : args) {
-        ObjSerialize(obj.get(), &serializer);
+        written_bytes_ += ObjSerialize(obj.get(), &serializer);
     }
     return block_stream_->status();
 }
 
+void BinLogWriter::Reset(OutputStream *stream) {
+    if (stream == block_stream_) {
+        return;
+    }
+    if (ownership_) {
+        delete block_stream_;
+    }
+    block_stream_ = stream;
+    written_bytes_ = 0;
+}
 
 BinLogReader::BinLogReader(InputStream *stream, bool ownership,
                            size_t block_size)
@@ -47,17 +58,18 @@ BinLogReader::~BinLogReader() {
 
 #define CALL(expr) if (!expr) { return false; } (void)0
 
-bool BinLogReader::Read(CmdCode *cmd_code, std::vector<Handle<Obj>> *args,
-                        yuki::Status *status) {
+bool BinLogReader::Read(Operator *op, yuki::Status *status) {
     using yuki::Status;
     using yuki::Slice;
 
     SerializedInputStream deserializer(block_stream_, false);
     uint8_t byte;
     CALL(deserializer.ReadByte(&byte));
-    *cmd_code = static_cast<CmdCode>(byte);
+    op->cmd = static_cast<CmdCode>(byte);
 
-    args->clear();
+    CALL(deserializer.ReadSInt64(&op->version));
+
+    op->args.clear();
     uint32_t n;
     CALL(deserializer.ReadInt32(&n));
     while (n--) {
@@ -67,7 +79,7 @@ bool BinLogReader::Read(CmdCode *cmd_code, std::vector<Handle<Obj>> *args,
             return false;
         }
 
-        args->emplace_back(obj);
+        op->args.emplace_back(obj);
     }
     return true;
 }

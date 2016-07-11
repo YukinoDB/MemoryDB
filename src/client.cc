@@ -15,7 +15,7 @@
 
 namespace yukino {
 
-const static Command kCommands[] = {
+const Command kCommands[] = {
 #define DEF_CMD(name, argc) { #name, CMD_##name, argc },
     DECL_COMMANDS(DEF_CMD)
 #undef  DEF_CMD
@@ -229,9 +229,9 @@ bool Client::ProcessBinaryInputBuffer(yuki::SliceRef buf, size_t *proced) {
     return false;
 }
 
-#define APPEND_LOG() \
+#define APPEND_LOG(ts) \
     do { \
-        auto append_log_rv = db->AppendLog(cmd.code, args); \
+        auto append_log_rv = db->AppendLog(cmd.code, (ts), args); \
         if (append_log_rv.Failed()) { \
             AddErrorReply("%s append log fail: %s", cmd.z, \
                           append_log_rv.ToString().c_str()); \
@@ -322,9 +322,10 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
 
     case CMD_SET: {
         String *key = static_cast<String *>(args[0].get());
+        auto ts = worker_->server()->current_milsces();
 
-        APPEND_LOG();
-        auto rv = db->Put(key->data(), 0, args[1].get());
+        APPEND_LOG(ts);
+        auto rv = db->Put(key->data(), ts, args[1].get());
         if (rv.Failed()) {
             AddErrorReply("SET fail: %s", rv.ToString().c_str());
             return false;
@@ -336,7 +337,7 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
     case CMD_DELETE: {
         String *key = static_cast<String *>(args[0].get());
 
-        APPEND_LOG();
+        APPEND_LOG(0);
         auto rv = db->Delete(key->data());
         if (rv) {
             AddIntegerReply(1);
@@ -385,9 +386,9 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
         }
         GET_KEY(key, 0);
 
-        APPEND_LOG();
-        auto rv = db->Put(key->data(), worker_->server()->current_milsces(),
-                          list.get());
+        auto ts = worker_->server()->current_milsces();
+        APPEND_LOG(ts);
+        auto rv = db->Put(key->data(), ts, list.get());
         if (rv.Failed()) {
             AddErrorReply("LIST can not be created, %s", rv.ToString().c_str());
             return false;
@@ -404,7 +405,7 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
             return false;
         }
 
-        APPEND_LOG();
+        APPEND_LOG(0);
         for (int i = 1; i < args.size(); i++) {
             if (cmd.code == CMD_LPUSH) {
                 list->stub()->InsertHead(args[i].get());
@@ -424,7 +425,7 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
             return false;
         }
 
-        APPEND_LOG();
+        APPEND_LOG(0);
         Obj *value = nullptr;
         if (cmd.code == CMD_LPOP) {
             list->stub()->PopHead(&value);

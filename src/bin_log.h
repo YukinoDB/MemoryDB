@@ -20,12 +20,22 @@ public:
     BinLogWriter(OutputStream *stream, bool ownership, size_t block_size);
     ~BinLogWriter();
 
-    yuki::Status Append(CmdCode cmd_code,
+    yuki::Status Append(CmdCode cmd_code, int64_t version,
                         const std::vector<Handle<Obj>> &args);
 
+    void Reset(OutputStream *stream);
+
+    size_t written_bytes() const { return written_bytes_; }
 private:
     OutputStream *block_stream_;
     bool ownership_;
+    size_t written_bytes_ = 0;
+};
+
+struct Operator {
+    CmdCode cmd;
+    int64_t version;
+    std::vector<Handle<Obj>> args;
 };
 
 class BinLogReader {
@@ -33,19 +43,12 @@ public:
     BinLogReader(InputStream *stream, bool ownership, size_t block_size);
     ~BinLogReader();
 
-    bool Read(CmdCode *cmd_code, std::vector<Handle<Obj>> *args,
-              yuki::Status *status);
+    bool Read(Operator *op, yuki::Status *status);
 
 private:
     InputStream *block_stream_;
     bool ownership_;
 };
-
-//struct Operator {
-//    int32_t cmd_code;
-//    Obj   **args;
-//    int     argc;
-//};
 
 } // namespace yukino
 

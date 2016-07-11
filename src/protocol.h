@@ -23,6 +23,7 @@ enum CmdCode {
 #define DEF_CMD_CODE(name, argc) CMD_##name,
     DECL_COMMANDS(DEF_CMD_CODE)
 #undef DEF_CMD_CODE
+    MAX_COMMANDS,
 };
 
 // ERROR
@@ -64,6 +65,8 @@ const struct command *yukino_command (const char *str, unsigned int len);
 
 namespace yukino {
     typedef command Command;
+
+    extern const Command kCommands[];
 } // namespace yukino
 
 #endif // __cplusplus

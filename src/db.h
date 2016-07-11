@@ -25,7 +25,10 @@ public:
 
     // Write-Ahead-Log
     virtual yuki::Status AppendLog(int code,
+                                   int64_t version,
                                    const std::vector<Handle<Obj>> &args) = 0;
+
+    virtual yuki::Status Checkpoint(bool force) = 0;
 
     virtual Iterator *iterator() = 0;
 

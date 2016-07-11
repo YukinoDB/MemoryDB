@@ -14,6 +14,8 @@ public:
 
     inline size_t WriteByte(uint8_t byte);
 
+    inline size_t WriteFixed32(uint32_t value);
+
     inline size_t WriteInt32(uint32_t value);
     inline size_t WriteSInt32(int32_t value);
 
@@ -25,11 +27,12 @@ public:
     inline size_t WriteString(const std::string &str);
 
     yuki::Status status() const { return stub_->status(); }
+    OutputStream *stub() const { return stub_; }
 
 private:
     OutputStream *stub_;
     bool ownership_;
-};
+}; // class SerializedOutputStream
 
 class SerializedInputStream {
 public:
@@ -47,16 +50,56 @@ public:
     inline size_t ReadString(yuki::Slice *value, std::string *stub);
 
     inline yuki::Status status() const;
-    inline void set_status(const yuki::Status &s) { status_ = s; }
+    void set_status(const yuki::Status &s) { status_ = s; }
+
+    InputStream *stub() const { return stub_; }
+
 private:
     InputStream *stub_;
     bool ownership_;
     yuki::Status status_;
     std::string dummy_;
-};
+}; // class SerializedInputStream
+
+class VerifiedOutputStreamProxy : public OutputStream {
+public:
+    VerifiedOutputStreamProxy(OutputStream *stream, bool ownership,
+                              uint32_t initial);
+    virtual ~VerifiedOutputStreamProxy() override;
+
+    virtual size_t Write(const void *buf, size_t size) override;
+    virtual yuki::Status status() const override;
+
+    uint32_t crc32_checksum() const { return crc32_checksum_; }
+private:
+    OutputStream *stub_;
+    bool ownership_;
+    uint32_t crc32_checksum_;
+}; // class VerifiedOutputStreamProxy
+
+class VerifiedInputStreamProxy : public InputStream {
+public:
+    VerifiedInputStreamProxy(InputStream *stream, bool ownership,
+                             uint32_t initial);
+    virtual ~VerifiedInputStreamProxy() override;
+
+    virtual bool ReadLine(std::string *line) override;
+    virtual bool Read(size_t size, yuki::Slice *buf, std::string *stub) override;
+    virtual yuki::Status status() const override;
+
+    uint32_t crc32_checksum() const { return crc32_checksum_; }
+private:
+    InputStream *stub_;
+    bool ownership_;
+    uint32_t crc32_checksum_;
+}; // class VerifiedInputStreamProxy
 
 inline size_t SerializedOutputStream::WriteByte(uint8_t byte) {
-    return stub_->Write(yuki::Slice(reinterpret_cast<char *>(&byte), 1));
+    return stub_->Write(&byte, 1);
+}
+
+inline size_t SerializedOutputStream::WriteFixed32(uint32_t value) {
+    return stub_->Write(&value, sizeof(value));
 }
 
 inline size_t SerializedOutputStream::WriteInt32(uint32_t value) {

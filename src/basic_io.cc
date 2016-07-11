@@ -111,9 +111,9 @@ public:
 
     virtual ~BufferedOutputStream() {}
 
-    virtual size_t Write(yuki::SliceRef buf) override {
-        buf_->append(buf.Data(), buf.Length());
-        return buf.Length();
+    virtual size_t Write(const void *buf, size_t size) override {
+        buf_->append(static_cast<const char *>(buf), size);
+        return size;
     }
 
     virtual yuki::Status status() const override {
@@ -130,19 +130,46 @@ public:
 
     virtual ~FileOutputStream() {}
 
-    virtual size_t Write(yuki::SliceRef buf) override {
-        return fwrite(buf.Data(), 1, buf.Length(), fp_);
+    virtual size_t Write(const void *buf, size_t size) override {
+        return fwrite(buf, 1, size, fp_);
     }
 
     virtual yuki::Status status() const override {
         using yuki::Status;
-
         return ferror(fp_) ? Status::Systemf("io error") : Status::OK();
     }
     
 private:
     FILE *fp_;
 }; // FileOutputStream
+
+class PosixFileOutputStream : public OutputStream {
+public:
+    PosixFileOutputStream(int fd) : fd_(fd) {}
+
+    virtual ~PosixFileOutputStream() {
+    }
+
+    virtual size_t Write(const void *buf, size_t size) override {
+        ssize_t rv = write(fd_, buf, size);
+        if (rv < 0) {
+            status_ = yuki::Status::Systemf("write fail");
+            return 0;
+        } else {
+            if (status_.Failed()) {
+                status_ = yuki::Status::OK();
+            }
+            return static_cast<size_t>(rv);
+        }
+
+    }
+
+    virtual yuki::Status status() const override { return status_; }
+
+private:
+    int fd_;
+    yuki::Status status_;
+}; // class PosixFileOutputStream
 
 InputStream *NewBufferedInputStream(yuki::SliceRef buf) {
     return new BufferedInputStream(buf);
@@ -158,6 +185,11 @@ OutputStream *NewBufferedOutputStream(std::string *buf) {
 
 OutputStream *NewFileOutputStream(FILE *fp) {
     return new FileOutputStream(fp);
+}
+
+OutputStream *NewPosixFileOutputStream(int fd) {
+    DCHECK_GE(fd, 0);
+    return new PosixFileOutputStream(fd);
 }
 
 } // namespace yukino

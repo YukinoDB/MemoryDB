@@ -34,7 +34,9 @@ public:
 
     virtual ~OutputStream();
 
-    virtual size_t Write(yuki::SliceRef buf) = 0;
+    virtual size_t Write(const void *buf, size_t size) = 0;
+
+    inline size_t Write(yuki::SliceRef buf);
     
     inline size_t Fprintf(const char *fmt, ...);
 
@@ -50,10 +52,15 @@ inline size_t OutputStream::Fprintf(const char *fmt, ...) {
     return Write(yuki::Slice(buf));
 }
 
+inline size_t OutputStream::Write(yuki::SliceRef buf) {
+    return Write(buf.Data(), buf.Length());
+}
+
 InputStream *NewBufferedInputStream(yuki::SliceRef buf);
 InputStream *NewFileInputStream(FILE *fp);
 OutputStream *NewBufferedOutputStream(std::string *buf);
 OutputStream *NewFileOutputStream(FILE *fp);
+OutputStream *NewPosixFileOutputStream(int fd);
 
 } // namespace yukino
 

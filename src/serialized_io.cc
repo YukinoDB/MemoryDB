@@ -1,4 +1,5 @@
 #include "serialized_io.h"
+#include "crc32.h"
 
 namespace yukino {
 
@@ -72,6 +73,63 @@ bool SerializedInputStream::ReadInt64(uint64_t *value) {
         status_ = Status::Corruptionf("varint64 too large");
     }
     return true;
+}
+
+VerifiedOutputStreamProxy::VerifiedOutputStreamProxy(OutputStream *stream,
+                                                     bool ownership,
+                                                     uint32_t initial)
+    : stub_(DCHECK_NOTNULL(stream))
+    , ownership_(ownership)
+    , crc32_checksum_(initial) {
+}
+
+VerifiedOutputStreamProxy::~VerifiedOutputStreamProxy() {
+    if (ownership_) {
+        delete stub_;
+    }
+}
+
+size_t VerifiedOutputStreamProxy::Write(const void *buf, size_t size) {
+    crc32_checksum_ = crc32(crc32_checksum_, buf, size);
+    return stub_->Write(buf, size);
+}
+
+yuki::Status VerifiedOutputStreamProxy::status() const {
+    return stub_->status();
+}
+
+VerifiedInputStreamProxy::VerifiedInputStreamProxy(InputStream *stream,
+                                                   bool ownership,
+                                                   uint32_t initial)
+    : stub_(DCHECK_NOTNULL(stream))
+    , ownership_(ownership)
+    , crc32_checksum_(initial) {
+}
+
+VerifiedInputStreamProxy::~VerifiedInputStreamProxy() {
+    if (ownership_) {
+        delete stub_;
+    }
+}
+
+bool VerifiedInputStreamProxy::ReadLine(std::string *line) {
+    auto eof = stub_->ReadLine(line);
+    if (!eof) {
+        crc32_checksum_ = crc32(crc32_checksum_, line->data(), line->size());
+    }
+    return eof;
+}
+
+bool VerifiedInputStreamProxy::Read(size_t size, yuki::Slice *buf, std::string *stub) {
+    auto eof = stub_->Read(size, buf, stub);
+    if (!eof) {
+        crc32_checksum_ = crc32(crc32_checksum_, buf->Data(), buf->Length());
+    }
+    return eof;
+}
+
+yuki::Status VerifiedInputStreamProxy::status() const {
+    return stub_->status();
 }
 
 } // namespace yukion

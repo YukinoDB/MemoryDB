@@ -7,6 +7,7 @@
 
 namespace yukino {
 
+class BinLogWriter;
 struct DBConf;
 
 class HashDB : public DB {
@@ -16,8 +17,10 @@ public:
     virtual ~HashDB() override;
 
     virtual yuki::Status Open() override;
+    virtual yuki::Status Checkpoint(bool force) override;
     virtual yuki::Status
-    AppendLog(int code, const std::vector<Handle<Obj>> &args) override;
+    AppendLog(int code, int64_t version,
+              const std::vector<Handle<Obj>> &args) override;
     virtual Iterator *iterator() override;
     virtual int num_keys() const override;
     virtual yuki::Status Put(yuki::SliceRef key, uint64_t version_number,
@@ -31,6 +34,9 @@ private:
     size_t memory_limit_;
     bool persistent_;
     int id_;
+    BinLogWriter *log_ = nullptr;
+    int log_fd_ = -1;
+    int version_ = 0;
 };
 
 } // namespace yukino
