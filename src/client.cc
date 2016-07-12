@@ -209,9 +209,15 @@ bool Client::ProcessTextInputBuffer(yuki::SliceRef buf, size_t *proced) {
         cmd = Slice(buf.Data(), newline - buf.Data());
     }
 
+    char *cast_cmd = new char[cmd.Length()];
+    for (size_t i = 0; i < cmd.Length(); i++) {
+        cast_cmd[i] = (cmd.Data()[i] & ~32);
+    }
     bool rv;
-    auto cmd_entry = ::yukino_command(cmd.Data(),
+    auto cmd_entry = ::yukino_command(cast_cmd,
                                       static_cast<unsigned>(cmd.Length()));
+    delete[] cast_cmd;
+
     if (!cmd_entry) {
         AddErrorReply("Command %.*s not support.", cmd.Length(), cmd.Data());
         rv = false;
@@ -302,9 +308,28 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
         AddStringReply(Slice("ok", 2));
     } return true;
 
+    case CMD_DUMP: {
+        bool force = false;
+
+        if (args.size() > 0) {
+            int64_t value;
+            if (!ObjCastIntIf(args[0].get(), &value)) {
+                AddErrorReply("%s bad argument type.", cmd.z);
+                return false;
+            }
+            force = (value == 0 ? false : true);
+        }
+        auto rv = db->Checkpoint(force);
+        if (rv.Failed()) {
+            AddErrorReply("%s fail. %s", cmd.z, rv.ToString().c_str());
+            return false;
+        }
+        AddStringReply(Slice("ok", 2));
+    } return true;
+
     case CMD_GET: {
-        String *key = static_cast<String *>(args[0].get());
-        //auto rv = db->Put(key->data(), 0, args[1].get());
+        GET_KEY(key, 0);
+
         Obj *value = nullptr;
         auto rv = db->Get(key->data(), nullptr, &value);
         if (rv.Failed()) {
@@ -316,12 +341,19 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
             }
             return false;
         }
+
+        if (value->type() != YKN_INTEGER && value->type() != YKN_STRING) {
+            AddErrorReply("SET fail: bad value type.");
+            ObjRelease(value);
+            return false;
+        }
         
         AddObjReply(value);
+        ObjRelease(value);
     } return true;
 
     case CMD_SET: {
-        String *key = static_cast<String *>(args[0].get());
+        GET_KEY(key, 0);
         auto ts = worker_->server()->current_milsces();
 
         APPEND_LOG(ts);
@@ -335,7 +367,7 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
     } return true;
 
     case CMD_DELETE: {
-        String *key = static_cast<String *>(args[0].get());
+        GET_KEY(key, 0);
 
         APPEND_LOG(0);
         auto rv = db->Delete(key->data());
@@ -457,7 +489,7 @@ bool Client::GetList(yuki::SliceRef key, DB *db, List **list) {
         }
         return false;
     }
-    if (value->type() == YKN_LIST) {
+    if (value->type() != YKN_LIST) {
         AddErrorReply("Bad type, not a list");
         return false;
     }

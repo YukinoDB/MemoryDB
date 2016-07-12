@@ -24,12 +24,15 @@ yuki::Status BinLogWriter::Append(CmdCode cmd_code, int64_t version,
 
     SerializedOutputStream serializer(block_stream_, false);
 
-    written_bytes_ += serializer.WriteByte(static_cast<char>(cmd_code));
-    written_bytes_ += serializer.WriteSInt64(version);
-    written_bytes_ += serializer.WriteInt32(static_cast<uint32_t>(args.size()));
+    size_t bytes = 0;
+    bytes += serializer.WriteByte(static_cast<char>(cmd_code));
+    bytes += serializer.WriteSInt64(version);
+    bytes += serializer.WriteInt32(static_cast<uint32_t>(args.size()));
     for (const auto &obj : args) {
-        written_bytes_ += ObjSerialize(obj.get(), &serializer);
+        bytes += ObjSerialize(obj.get(), &serializer);
     }
+
+    written_bytes_ += bytes;
     return block_stream_->status();
 }
 

@@ -10,6 +10,7 @@ struct command {
 %%
 AUTH,   CMD_AUTH,   1
 SELECT, CMD_SELECT, 1
+DUMP,   CMD_DUMP,   0
 GET,    CMD_GET,    1
 SET,    CMD_SET,    2
 DELETE, CMD_DELETE, 1

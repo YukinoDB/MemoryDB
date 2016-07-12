@@ -22,6 +22,8 @@ HashDB::HashDB(const DBConf &conf, const std::string &data_dir, int id,
 }
 
 HashDB::~HashDB() {
+    delete log_;
+
     if (log_fd_ >= 0) {
         close(log_fd_);
     }
@@ -29,13 +31,15 @@ HashDB::~HashDB() {
 
 yuki::Status HashDB::Open() {
     using yuki::Status;
+    using yuki::FilePath;
+    using yuki::Strings;
 
     if (!persistent_) { // in memory, do not need any files.
         return Status::OK();
     }
 
     // db dir: data_dir/db-<id>/
-    yuki::FilePath db_dir(data_dir_);
+    FilePath db_dir(data_dir_);
     db_dir.Append(yuki::Strings::Format("db-%d", id_));
 
     bool exist;
@@ -55,55 +59,26 @@ yuki::Status HashDB::Open() {
     }
 
     // db all clean
-    yuki::FilePath manifest_path(db_dir);
-    manifest_path.Append("MANIFEST");
-
-    yuki::FilePath log_path(db_dir);
     if (is_new) {
-        rv = yuki::Strings::ToFile(manifest_path, "0");
+        FilePath manifest_path(db_dir);
+        manifest_path.Append("MANIFEST");
+
+        rv = Strings::ToFile(manifest_path, "0");
         if (rv.Failed()) {
             PLOG(ERROR) << "write to " << manifest_path.Get() << " fail";
             return rv;
         }
 
-        log_path.Append("log-0");
-
         version_ = 0;
     } else {
-        std::string buf;
-        rv = yuki::Strings::FromFile(manifest_path, &buf);
+        rv = DoOpen();
         if (rv.Failed()) {
             return rv;
         }
-
-        int version;
-        if (!ValueTraits<int>::Parse(yuki::Slice(buf), &version)) {
-            LOG(ERROR) << "bad MANIFEST file: " << buf;
-            return Status::Corruptionf("bad MANIFEST file: %s", buf.c_str());
-        }
-
-        yuki::FilePath data_path(db_dir);
-        data_path.Append(yuki::Strings::Format("table-%d", version));
-        rv = data_path.Exist(&exist);
-        if (rv.Failed()) {
-            PLOG(ERROR) << rv.ToString();
-            return rv;
-        }
-
-        if (exist) {
-            // TODO: load table data
-        }
-
-        log_path.Append(yuki::Strings::Format("log-%d", version));
-        rv = DBRedo(yuki::Slice(log_path.Get()), this);
-        if (rv.Failed()) {
-            LOG(ERROR) << "redo fail, from file: " << log_path.Get();
-            return rv;
-        }
-
-        version_ = version;
     }
 
+    FilePath log_path(db_dir);
+    log_path.Append(Strings::Format("log-%d", version_));
     if (is_new) {
         log_fd_ = open(log_path.Get().c_str(), O_CREAT|O_EXCL|O_WRONLY|O_APPEND,
                        0664);
@@ -119,45 +94,12 @@ yuki::Status HashDB::Open() {
 }
 
 yuki::Status HashDB::Checkpoint(bool force) {
-    using yuki::Status;
-    using yuki::Slice;
-
-    auto new_version = version_ + 1;
-
-    // db dir: data_dir/db-<id>/
-    yuki::FilePath db_dir(data_dir_);
-    db_dir.Append(yuki::Strings::Format("db-%d", id_));
-
-    yuki::FilePath table_path(db_dir);
-    table_path.Append(yuki::Strings::Format("table-%d", new_version));
-
-    TableOptions options;
-    options.file_name = Slice(table_path.Get());
-    options.overwrite = false;
-
-    auto rv = DumpTable(&options, this);
-    if (rv.Failed()) {
-        return rv;
+    if (!persistent_) {
+        return yuki::Status::Corruptionf("db do not need persistent");
     }
 
-    // TODO: post close fd
-    close(options.fd);
-
-    yuki::FilePath log_path(db_dir);
-    log_path.Append(yuki::Strings::Format("log-%d", new_version));
-
-    // TODO: post close fd
-    close(log_fd_);
-
-    log_fd_ = open(log_path.Get().c_str(), O_CREAT|O_WRONLY|O_APPEND, 0664);
-    if (log_fd_ < 0) {
-        PLOG(ERROR) << "open " << log_path.Get() << " fail";
-        return Status::Systemf("open %s fail", log_path.Get().c_str());
-    }
-    log_->Reset(NewPosixFileOutputStream(log_fd_));
-
-    version_ = new_version;
-    return Status::OK();
+    std::unique_lock<std::mutex> lock(mutex_);
+    return DoCheckpoint(force);
 }
 
 yuki::Status
@@ -166,6 +108,7 @@ HashDB::AppendLog(int code, int64_t version,
     using yuki::Status;
 
     if (persistent_) {
+        std::unique_lock<std::mutex> lock(mutex_);
         auto rv = log_->Append(static_cast<CmdCode>(code), version, args);
         if (rv.Failed()) {
             LOG(ERROR) << "write log error: " << rv.ToString();
@@ -174,8 +117,11 @@ HashDB::AppendLog(int code, int64_t version,
 
         // TODO: post fsync syscall
 
-        // TODO:
-        // if (log_->written_bytes() > ??)
+        rv = DoCheckpoint(false);
+        if (rv.Failed()) {
+            LOG(ERROR) << "checkpoint fail: " << rv.ToString();
+            return rv;
+        }
     }
     return Status::OK();
 }
@@ -204,6 +150,130 @@ yuki::Status HashDB::Get(yuki::SliceRef key, Version *ver,
     using yuki::Status;
 
     return hash_map_.Get(key, ver, value);
+}
+
+yuki::Status HashDB::DoOpen() {
+    using yuki::Slice;
+    using yuki::Status;
+    using yuki::FilePath;
+    using yuki::Strings;
+
+    FilePath db_dir(data_dir_);
+    db_dir.Append(Strings::Format("db-%d", id_));
+
+    yuki::FilePath manifest_path(db_dir);
+    manifest_path.Append("MANIFEST");
+
+    std::string buf;
+    auto rv = yuki::Strings::FromFile(manifest_path, &buf);
+    if (rv.Failed()) {
+        return rv;
+    }
+
+    int version;
+    if (!ValueTraits<int>::Parse(yuki::Slice(buf), &version)) {
+        LOG(ERROR) << "bad MANIFEST file: " << buf;
+        return Status::Corruptionf("bad MANIFEST file: %s", buf.c_str());
+    }
+
+    yuki::FilePath table_path(db_dir);
+    table_path.Append(yuki::Strings::Format("table-%d", version));
+    bool exist;
+    rv = table_path.Exist(&exist);
+    if (rv.Failed()) {
+        PLOG(ERROR) << rv.ToString();
+        return rv;
+    }
+
+    if (exist) {
+        TableOptions options;
+        options.file_name = Slice(table_path.Get());
+
+        rv = LoadTable(options, this);
+        if (rv.Failed()) {
+            LOG(ERROR) << "load table [" << id_ << "] fail: " <<
+            rv.ToString();
+            return rv;
+        }
+    }
+
+    FilePath log_path(db_dir);
+    log_path.Append(yuki::Strings::Format("log-%d", version));
+    rv = DBRedo(yuki::Slice(log_path.Get()), this);
+    if (rv.Failed()) {
+        LOG(ERROR) << "redo fail, from file: " << log_path.Get();
+        return rv;
+    }
+
+    version_ = version;
+    return Status::OK();
+}
+
+yuki::Status HashDB::DoCheckpoint(bool force) {
+    using yuki::Status;
+    using yuki::Slice;
+    using yuki::Strings;
+
+    // 10mb
+    if (is_dumpping_) {
+        return Status::Corruptionf("checkpoint in progress...");
+    }
+    if (!force && log_->written_bytes() < 10UL * 1024UL * 1024UL) {
+        return Status::OK();
+    }
+    is_dumpping_ = true;
+
+    auto new_version = version_ + 1;
+
+    // db dir: data_dir/db-<id>/
+    yuki::FilePath db_dir(data_dir_);
+    db_dir.Append(yuki::Strings::Format("db-%d", id_));
+
+    yuki::FilePath table_path(db_dir);
+    table_path.Append(yuki::Strings::Format("table-%d", new_version));
+
+    TableOptions options;
+    options.file_name = Slice(table_path.Get());
+    options.overwrite = false;
+
+    auto rv = DumpTable(&options, this);
+    if (rv.Failed()) {
+        is_dumpping_ = false;
+        return rv;
+    }
+
+    // TODO: post close fd
+    close(options.fd);
+
+    yuki::FilePath log_path(db_dir);
+    log_path.Append(yuki::Strings::Format("log-%d", new_version));
+
+    // TODO: post close fd
+    close(log_fd_);
+
+    log_fd_ = open(log_path.Get().c_str(), O_CREAT|O_WRONLY|O_APPEND, 0664);
+    if (log_fd_ < 0) {
+        is_dumpping_ = false;
+
+        PLOG(ERROR) << "open " << log_path.Get() << " fail";
+        return Status::Systemf("open %s fail", log_path.Get().c_str());
+    }
+    log_->Reset(NewPosixFileOutputStream(log_fd_));
+
+    version_ = new_version;
+
+    yuki::FilePath manifest_path(db_dir);
+    manifest_path.Append("MANIFEST");
+    rv = Strings::ToFile(manifest_path, Strings::Format("%d", version_));
+    if (rv.Failed()) {
+        is_dumpping_ = false;
+
+        PLOG(ERROR) << "write MANIFEST file fail." << rv.ToString();
+        return rv;
+    }
+
+    is_dumpping_ = false;
+    return Status::OK();
 }
 
 } // namespace yukino

@@ -8,6 +8,7 @@ namespace yukino {
 #define DECL_COMMANDS(_) \
     _(AUTH,   1) \
     _(SELECT, 1) \
+    _(DUMP,   0) \
     _(GET,    1) \
     _(SET,    2) \
     _(DELETE, 1) \

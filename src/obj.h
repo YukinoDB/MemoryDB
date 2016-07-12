@@ -207,9 +207,9 @@ inline List *List::Build(void *buf, size_t size) {
         return nullptr;
     }
 
-    auto list = static_cast<List *>(buf);
-    new (&list->raw + 1) Stub();
-    return list;
+    auto base = new (buf) Obj(YKN_LIST);
+    new (&base->raw + 1) Stub();
+    return static_cast<List *>(base);
 }
 
 /*static*/

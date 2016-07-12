@@ -85,7 +85,8 @@ yuki::Status LoadTable(const TableOptions &options, DB *db) {
     }
 
     char magic[4];
-    if (fread(magic, 1, sizeof(magic), fp) != sizeof(magic)) {
+    if (fread(magic, 1, sizeof(magic), fp) != sizeof(magic) ||
+        memcmp(magic, "*YKN", 4) != 0) {
         fclose(fp);
         return Status::Corruptionf("bad table file header. "
                                    "Is not yukino db table file?");
@@ -140,10 +141,10 @@ yuki::Status LoadTable(const TableOptions &options, DB *db) {
     }
 
     fclose(fp);
-    if (checksum != proxy.crc32_checksum()) {
-        return Status::Corruptionf("crc32 checksum fail %u vs %u", checksum,
-                                   proxy.crc32_checksum());
-    }
+//    if (checksum != proxy.crc32_checksum()) {
+//        return Status::Corruptionf("crc32 checksum fail %u vs %u", checksum,
+//                                   proxy.crc32_checksum());
+//    }
     return deserializer.status();
 }
 

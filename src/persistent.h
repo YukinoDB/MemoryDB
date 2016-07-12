@@ -20,7 +20,7 @@ struct TableOptions {
 };
 
 yuki::Status DumpTable(TableOptions *options, DB *db);
-yuki::Status LoadTable(TableOptions options, DB *db);
+yuki::Status LoadTable(const TableOptions &options, DB *db);
 
 yuki::Status DBRedo(yuki::SliceRef file_name, DB *db);
 

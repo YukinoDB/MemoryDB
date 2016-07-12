@@ -21,7 +21,9 @@ Server::~Server() {
         close(listener_fd_);
     }
 
-    aeDeleteEventLoop(event_loop_);
+    if (event_loop_) {
+        aeDeleteEventLoop(event_loop_);
+    }
     delete[] workers_;
 
     for (int i = 0; i < conf().num_db_conf(); i++) {

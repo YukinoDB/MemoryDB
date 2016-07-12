@@ -4,6 +4,7 @@
 #include "db.h"
 #include "cocurrent_hash_map.h"
 #include <string>
+#include <mutex>
 
 namespace yukino {
 
@@ -29,6 +30,9 @@ public:
     virtual yuki::Status Get(yuki::SliceRef key, Version *ver,
                              Obj **value) override;
 private:
+    yuki::Status DoOpen();
+    yuki::Status DoCheckpoint(bool force);
+
     CocurrentHashMap hash_map_;
     const std::string data_dir_;
     size_t memory_limit_;
@@ -37,6 +41,8 @@ private:
     BinLogWriter *log_ = nullptr;
     int log_fd_ = -1;
     int version_ = 0;
+    bool is_dumpping_ = false;
+    std::mutex mutex_;
 };
 
 } // namespace yukino

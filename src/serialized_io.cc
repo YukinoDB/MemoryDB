@@ -113,19 +113,19 @@ VerifiedInputStreamProxy::~VerifiedInputStreamProxy() {
 }
 
 bool VerifiedInputStreamProxy::ReadLine(std::string *line) {
-    auto eof = stub_->ReadLine(line);
-    if (!eof) {
+    auto ok = stub_->ReadLine(line);
+    if (ok) {
         crc32_checksum_ = crc32(crc32_checksum_, line->data(), line->size());
     }
-    return eof;
+    return ok;
 }
 
 bool VerifiedInputStreamProxy::Read(size_t size, yuki::Slice *buf, std::string *stub) {
-    auto eof = stub_->Read(size, buf, stub);
-    if (!eof) {
+    auto ok = stub_->Read(size, buf, stub);
+    if (ok) {
         crc32_checksum_ = crc32(crc32_checksum_, buf->Data(), buf->Length());
     }
-    return eof;
+    return ok;
 }
 
 yuki::Status VerifiedInputStreamProxy::status() const {
