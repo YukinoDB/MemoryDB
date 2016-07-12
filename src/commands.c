@@ -116,7 +116,7 @@ yukino_command (register const char *str, register unsigned int len)
       {"LPOP",   CMD_LPOP,   1},
       {""}, {""}, {""},
 #line 16 "commands.gperf"
-      {"DELETE", CMD_DELETE, 1},
+      {"DEL",    CMD_DEL,    1},
 #line 18 "commands.gperf"
       {"LIST",   CMD_LIST,   0},
       {""}, {""}, {""},

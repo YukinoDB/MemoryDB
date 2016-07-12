@@ -11,7 +11,7 @@ namespace yukino {
     _(DUMP,   0) \
     _(GET,    1) \
     _(SET,    2) \
-    _(DELETE, 1) \
+    _(DEL,    1) \
     _(KEYS,   0) \
     _(LIST,   0) \
     _(LLEN,   1) \

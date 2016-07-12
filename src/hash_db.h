@@ -3,18 +3,25 @@
 
 #include "db.h"
 #include "cocurrent_hash_map.h"
+#include "yuki/file_path.h"
+#include <atomic>
 #include <string>
+#include <thread>
 #include <mutex>
 
 namespace yukino {
 
+class BackgroundWorkQueue;
 class BinLogWriter;
 struct DBConf;
 
 class HashDB : public DB {
 public:
-    HashDB(const DBConf &conf, const std::string &data_dir, int id,
-           int initialize_size);
+    HashDB(const DBConf &conf,
+           const std::string &data_dir,
+           int id,
+           int initialize_size,
+           BackgroundWorkQueue *work_queue);
     virtual ~HashDB() override;
 
     virtual yuki::Status Open() override;
@@ -30,19 +37,25 @@ public:
     virtual yuki::Status Get(yuki::SliceRef key, Version *ver,
                              Obj **value) override;
 private:
-    yuki::Status DoOpen();
+    yuki::Status DoOpen(size_t *be_read);
     yuki::Status DoCheckpoint(bool force);
+    yuki::Status DoSave();
+    yuki::Status SaveTable(int version);
+    yuki::Status CreateLogFile(int version, int *fd);
+    yuki::Status SaveVersion();
 
     CocurrentHashMap hash_map_;
-    const std::string data_dir_;
+    yuki::FilePath db_dir_;
     size_t memory_limit_;
     bool persistent_;
     int id_;
     BinLogWriter *log_ = nullptr;
     int log_fd_ = -1;
     int version_ = 0;
-    bool is_dumpping_ = false;
+    std::atomic<bool> is_saving_;
     std::mutex mutex_;
+    BackgroundWorkQueue *work_queue_;
+    std::thread saving_thread_;
 };
 
 } // namespace yukino

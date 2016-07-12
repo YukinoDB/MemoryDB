@@ -1,5 +1,6 @@
 #include "server.h"
 #include "worker.h"
+#include "background.h"
 #include "db.h"
 #include "configuration.h"
 #include "ae.h"
@@ -16,6 +17,7 @@ Server::Server(const std::string &conf_file, Configuration *conf, int num_events
 }
 
 Server::~Server() {
+
     if (event_loop_ && listener_fd_ >= 0) {
         aeDeleteFileEvent(event_loop_, listener_fd_, AE_READABLE);
         close(listener_fd_);
@@ -30,11 +32,15 @@ Server::~Server() {
         delete dbs_[i];
     }
     delete[] dbs_;
+
+    delete background_;
+    delete background_work_queue_;
 }
 
 yuki::Status Server::Init() {
     using yuki::Status;
 
+    background_work_queue_ = new Background::Delegate;
     if (conf().num_db_conf() > 0) {
         dbs_ = new DB *[conf().num_db_conf()];
         if (!dbs_) {
@@ -44,7 +50,7 @@ yuki::Status Server::Init() {
         memset(dbs_, 0, sizeof(DB *) * conf().num_db_conf());
         for (size_t i = 0; i < conf().num_db_conf(); i++) {
             dbs_[i] = DB::New(conf().db_conf(i), conf().data_dir(),
-                              static_cast<int>(i));
+                              static_cast<int>(i), background_work_queue_);
             if (!dbs_[i]) {
                 return Status::Errorf(Status::kSystemError,
                                       "not enough memory");
@@ -83,6 +89,10 @@ yuki::Status Server::Init() {
             return rv;
         }
     }
+
+    background_ = new Background;
+    background_->set_queue(background_work_queue_);
+    background_->AsyncRun();
     return Status::OK();
 }
 
@@ -102,7 +112,7 @@ DB *Server::db(int i) {
     return DCHECK_NOTNULL(dbs_[i]);
 }
 
-int64_t Server::current_milsces() const {
+/*static*/ int64_t Server::current_milsces() {
     struct timeval tv;
     if (::gettimeofday(&tv, nullptr) != 0) {
         PLOG(ERROR) << "can not get time!";

@@ -14,6 +14,8 @@ namespace yukino {
 
 class DB;
 class Worker;
+class Background;
+class BackgroundWorkQueue ;
 class Configuration;
 
 //
@@ -39,7 +41,11 @@ public:
 
     DB *db(int i);
 
-    int64_t current_milsces() const;
+    static int64_t current_milsces();
+
+    BackgroundWorkQueue *background_work_queue() const {
+        return background_work_queue_;
+    }
 
 private:
     static void HandleListenAccept(aeEventLoop *el, int fd, void *data,
@@ -56,6 +62,9 @@ private:
 
     DB **dbs_ = nullptr;
     Worker *workers_ = nullptr;
+    Background *background_ = nullptr;
+    BackgroundWorkQueue *background_work_queue_ = nullptr;
+
 }; // class Server
 
 } // namespace yukino

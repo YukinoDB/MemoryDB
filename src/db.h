@@ -12,6 +12,7 @@ struct Obj;
 struct Version;
 struct DBConf;
 class Iterator;
+class BackgroundWorkQueue;
 
 class DB {
 public:
@@ -41,7 +42,8 @@ public:
 
     virtual yuki::Status Get(yuki::SliceRef key, Version *ver, Obj **value) = 0;
 
-    static DB *New(const DBConf &conf, const std::string &data_dir, int id);
+    static DB *New(const DBConf &conf, const std::string &data_dir, int id,
+                   BackgroundWorkQueue *queue);
 }; // class DB
 
 } // namespace yukino

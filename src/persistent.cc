@@ -132,7 +132,6 @@ yuki::Status LoadTable(const TableOptions &options, DB *db) {
         }
 
         // value:
-
         auto obj = ObjDeserialize(&deserializer);
         if (!obj) {
             return deserializer.status();
@@ -141,14 +140,14 @@ yuki::Status LoadTable(const TableOptions &options, DB *db) {
     }
 
     fclose(fp);
-//    if (checksum != proxy.crc32_checksum()) {
-//        return Status::Corruptionf("crc32 checksum fail %u vs %u", checksum,
-//                                   proxy.crc32_checksum());
-//    }
+    if (checksum != proxy.crc32_checksum()) {
+        return Status::Corruptionf("crc32 checksum fail %u vs %u", checksum,
+                                   proxy.crc32_checksum());
+    }
     return deserializer.status();
 }
 
-yuki::Status DBRedo(yuki::SliceRef file_name, DB *db) {
+yuki::Status DBRedo(yuki::SliceRef file_name, DB *db, size_t *be_read) {
     using yuki::Slice;
     using yuki::Status;
 
@@ -180,6 +179,9 @@ yuki::Status DBRedo(yuki::SliceRef file_name, DB *db) {
     }
 
 final:
+    if (be_read) {
+        *be_read = ftell(fp);
+    }
     fclose(fp);
     return status;
 }
@@ -206,7 +208,7 @@ yuki::Status RedoCommand(const Command &cmd,
             db->Put(key->data(), version, args[1].get());
         }break;
 
-        case CMD_DELETE: {
+        case CMD_DEL: {
             GET_KEY(key, 0);
             db->Delete(key->data());
         } break;

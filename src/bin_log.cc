@@ -5,9 +5,13 @@
 
 namespace yukino {
 
-BinLogWriter::BinLogWriter(OutputStream *stream, bool ownership, size_t block_size)
+BinLogWriter::BinLogWriter(OutputStream *stream,
+                           bool ownership,
+                           size_t block_size,
+                           size_t initial_size)
     : block_stream_(stream)
-    , ownership_(ownership) {
+    , ownership_(ownership)
+    , written_bytes_(initial_size) {
 }
 
 BinLogWriter::~BinLogWriter() {

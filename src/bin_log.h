@@ -17,7 +17,8 @@ class InputStream;
 
 class BinLogWriter {
 public:
-    BinLogWriter(OutputStream *stream, bool ownership, size_t block_size);
+    BinLogWriter(OutputStream *stream, bool ownership, size_t block_size,
+                 size_t initial_size);
     ~BinLogWriter();
 
     yuki::Status Append(CmdCode cmd_code, int64_t version,

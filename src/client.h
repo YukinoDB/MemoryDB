@@ -28,6 +28,7 @@ public:
     enum State {
         STATE_INIT,
         STATE_AUTH,
+        STATE_AUTH_FAIL,
         STATE_PROC,
     };
 

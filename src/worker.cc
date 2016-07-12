@@ -68,6 +68,8 @@ void Worker::DeleteFileEvent(int fd, int mask) {
 
 void Worker::AsyncRun() {
     thread_ = std::move(std::thread([] (aeEventLoop *el) {
+        pthread_setname_np("worker");
+
         aeMain(DCHECK_NOTNULL(el));
     }, event_loop_));
 }

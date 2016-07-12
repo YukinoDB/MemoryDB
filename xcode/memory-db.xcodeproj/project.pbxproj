@@ -72,6 +72,9 @@
 		23C619091D337C2400E788C1 /* bin_log-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619071D337C2400E788C1 /* bin_log-test.cc */; };
 		23C6190C1D33938900E788C1 /* persistent.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C6190B1D33938900E788C1 /* persistent.cc */; };
 		23C6190D1D33938900E788C1 /* persistent.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C6190B1D33938900E788C1 /* persistent.cc */; };
+		23C619101D349A1B00E788C1 /* background.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C6190F1D349A1B00E788C1 /* background.cc */; };
+		23C619111D349A1B00E788C1 /* background.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C6190F1D349A1B00E788C1 /* background.cc */; };
+		23C619131D34C68500E788C1 /* background-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C619121D34C68500E788C1 /* background-test.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -164,6 +167,9 @@
 		23C619071D337C2400E788C1 /* bin_log-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "bin_log-test.cc"; sourceTree = "<group>"; };
 		23C6190A1D33934F00E788C1 /* persistent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = persistent.h; sourceTree = "<group>"; };
 		23C6190B1D33938900E788C1 /* persistent.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = persistent.cc; sourceTree = "<group>"; };
+		23C6190E1D34985D00E788C1 /* background.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = background.h; sourceTree = "<group>"; };
+		23C6190F1D349A1B00E788C1 /* background.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = background.cc; sourceTree = "<group>"; };
+		23C619121D34C68500E788C1 /* background-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "background-test.cc"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -247,6 +253,7 @@
 				23C618EC1D313C3B00E788C1 /* basic_io.h */,
 				23C619061D337AFA00E788C1 /* handle.h */,
 				23C6190A1D33934F00E788C1 /* persistent.h */,
+				23C6190E1D34985D00E788C1 /* background.h */,
 			);
 			name = Header;
 			path = ../src;
@@ -277,6 +284,7 @@
 				23C618F11D31454800E788C1 /* bin_log.cc */,
 				23C618F51D314DE300E788C1 /* serialized_io.cc */,
 				23C6190B1D33938900E788C1 /* persistent.cc */,
+				23C6190F1D349A1B00E788C1 /* background.cc */,
 			);
 			name = Sources;
 			path = ../src;
@@ -297,6 +305,7 @@
 				23C618E81D310F1100E788C1 /* lockfree_ring_buffer-test.cc */,
 				23C619031D33359200E788C1 /* serialized_io-test.cc */,
 				23C619071D337C2400E788C1 /* bin_log-test.cc */,
+				23C619121D34C68500E788C1 /* background-test.cc */,
 			);
 			name = Tests;
 			path = ../src;
@@ -380,6 +389,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23C618FE1D32104500E788C1 /* md5.c in Sources */,
+				23C619101D349A1B00E788C1 /* background.cc in Sources */,
 				23C255341D2E4AA9000B9159 /* ae.c in Sources */,
 				23C618F61D314DE300E788C1 /* serialized_io.cc in Sources */,
 				23C255351D2E4AA9000B9159 /* anet.c in Sources */,
@@ -420,6 +430,7 @@
 				23C255231D2B65DC000B9159 /* configuration-test.cc in Sources */,
 				23C2551D1D2B5AD7000B9159 /* server.cc in Sources */,
 				23C619091D337C2400E788C1 /* bin_log-test.cc in Sources */,
+				23C619111D349A1B00E788C1 /* background.cc in Sources */,
 				23C2553B1D2E54C8000B9159 /* db.cc in Sources */,
 				23C6190D1D33938900E788C1 /* persistent.cc in Sources */,
 				23C2550F1D2AA15F000B9159 /* anet.c in Sources */,
@@ -430,6 +441,7 @@
 				23C618F71D314DE300E788C1 /* serialized_io.cc in Sources */,
 				23C618FD1D32104500E788C1 /* crc32.c in Sources */,
 				23C2552C1D2CB989000B9159 /* client.cc in Sources */,
+				23C619131D34C68500E788C1 /* background-test.cc in Sources */,
 				23C2550A1D294DE4000B9159 /* obj-test.cc in Sources */,
 				23C254EF1D264D97000B9159 /* key.cc in Sources */,
 				23C2553F1D2E8816000B9159 /* hash_db.cc in Sources */,

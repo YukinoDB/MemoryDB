@@ -22,7 +22,7 @@ struct TableOptions {
 yuki::Status DumpTable(TableOptions *options, DB *db);
 yuki::Status LoadTable(const TableOptions &options, DB *db);
 
-yuki::Status DBRedo(yuki::SliceRef file_name, DB *db);
+yuki::Status DBRedo(yuki::SliceRef file_name, DB *db, size_t *be_read);
 
 } // namespace yukino
 

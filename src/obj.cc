@@ -53,13 +53,12 @@ size_t ObjSerialize(Obj *ob, SerializedOutputStream *serializer) {
             auto *bytes = &ob->raw + 1;
             int num_bytes = 0;
             for (;;) {
+                ++num_bytes;
                 size += serializer->WriteByte(*bytes);
                 if (*bytes < 0x80) {
                     break;
                 }
                 ++bytes;
-                ++num_bytes;
-
                 DCHECK_LE(num_bytes, yuki::Varint::kMax64Len);
             }
         } break;

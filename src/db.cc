@@ -10,11 +10,13 @@ DB::DB() {
 DB::~DB() {
 }
 
-/*static*/ DB *DB::New(const yukino::DBConf &conf, const std::string &data_dir,
-                       int id) {
+/*static*/ DB *DB::New(const yukino::DBConf &conf,
+                       const std::string &data_dir,
+                       int id,
+                       BackgroundWorkQueue *queue) {
     switch (conf.type) {
         case DB_HASH:
-            return new HashDB(conf, data_dir, id, 1023);
+            return new HashDB(conf, data_dir, id, 1023, queue);
 
         case DB_ORDER:
             // TODO:

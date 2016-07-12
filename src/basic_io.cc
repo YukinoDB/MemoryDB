@@ -87,7 +87,7 @@ public:
         }
 
         stub->resize(need);
-        auto rv = fread(&((*stub)[0]), need, 1, fp_);
+        auto rv = fread(&((*stub)[0]), 1, need, fp_);
         *buf = yuki::Slice(&((*stub)[0]), rv);
         return true;
     }

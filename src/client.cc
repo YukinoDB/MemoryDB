@@ -1,5 +1,6 @@
 #include "client.h"
 #include "worker.h"
+#include "background.h"
 #include "server.h"
 #include "db.h"
 #include "obj.h"
@@ -9,6 +10,7 @@
 #include "protocol.h"
 #include "iterator.h"
 #include "ae.h"
+#include "md5.h"
 #include "yuki/varint.h"
 #include "yuki/strings.h"
 #include <stdarg.h>
@@ -31,6 +33,39 @@ const char *strnchr(const char *z, int ch, size_t n) {
     return nullptr;
 }
 
+int ComparePassword(const uint8_t *digest, yuki::SliceRef cmp) {
+    if (cmp.Length() != 32) {
+        return -1;
+    }
+
+    uint8_t chk[16];
+    // 0x1234
+    //
+    for (size_t i = 0; i < 16; i++) {
+        uint8_t byte = 0;
+        char ch = cmp.Data()[i * 2];
+        if (ch >= '0' && ch <= '9') {
+            byte = ((ch - '0') << 4);
+        } else if (ch >= 'a' && ch <= 'f') {
+            byte = ((ch - 'a' + 10) << 4);
+        } else if (ch >= 'A' && ch <= 'F') {
+            byte = ((ch - 'A' + 10) << 4);
+        }
+
+        ch = cmp.Data()[i * 2 + 1];
+        if (ch >= '0' && ch <= '9') {
+            byte |= (ch - '0');
+        } else if (ch >= 'a' && ch <= 'f') {
+            byte |= (ch - 'a' + 10);
+        } else if (ch >= 'A' && ch <= 'F') {
+            byte |= (ch - 'A' + 10);
+        }
+
+        chk[i] = byte;
+    }
+    return memcmp(digest, chk, 16);
+}
+
 Client::Client(Worker *worker, int fd, yuki::SliceRef ip, int port)
     : worker_(worker)
     , fd_(fd)
@@ -41,8 +76,6 @@ Client::Client(Worker *worker, int fd, yuki::SliceRef ip, int port)
 Client::~Client() {
     if (fd_ >= 0) {
         aeDeleteFileEvent(worker_->event_loop(), fd_, AE_WRITABLE|AE_WRITABLE);
-
-        // TODO: to background thread
         close(fd_);
     }
 }
@@ -98,14 +131,16 @@ yuki::Status Client::IncomingRead() {
 
             if (input.Compare(yuki::Slice("TXT\r\n", 5)) == 0) {
                 protocol_ = PROTO_TEXT;
-                state_ = STATE_PROC;
 
+                state_ = worker_->server()->conf().auth()
+                       ? STATE_AUTH : STATE_PROC;
                 LOG(INFO) << "client " << address_ << ":" << port_
                           << " text protocol setup.";
             } else if (input.Compare(yuki::Slice("BIN\r\n", 5)) == 0) {
                 protocol_ = PROTO_BIN;
-                state_ = STATE_PROC;
 
+                state_ = worker_->server()->conf().auth()
+                       ? STATE_AUTH : STATE_PROC;
                 LOG(INFO) << "client " << address_ << ":" << port_
                           << " binary protocol setup.";
             } else {
@@ -140,6 +175,10 @@ yuki::Status Client::IncomingRead() {
                 }
             }
             break;
+
+        case STATE_AUTH_FAIL:
+            // should close client connection
+            return yuki::Status::Corruptionf("auth fail");
 
         default:
             break;
@@ -282,6 +321,38 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
     }
 
     switch (cmd.code) {
+
+    case CMD_AUTH: {
+        if (args[0]->type() != YKN_STRING) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            AddErrorReply("auth fail");
+
+            state_ = STATE_AUTH_FAIL;
+            return false;
+        }
+        String *pwd = static_cast<String *>(args[0].get());
+
+        MD5_CTX ctx;
+        MD5_Init(&ctx);
+
+        MD5_Update(&ctx, pwd->buf(), pwd->size());
+        MD5_Update(&ctx, "\n", 1);
+
+        uint8_t digest[16];
+        MD5_Final(digest, &ctx);
+
+        if (ComparePassword(digest,
+                            Slice(worker_->server()->conf().pass_digest())) != 0) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            AddErrorReply("auth fail");
+
+            state_ = STATE_AUTH_FAIL;
+            return false;
+        }
+        state_ = STATE_PROC;
+        AddStringReply(Slice("ok", 2));
+    } return true;
+
     case CMD_SELECT: {
         int db = 0;
         if (args[0]->type() == YKN_STRING) {
@@ -366,7 +437,7 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
         AddStringReply(Slice("ok", 2));
     } return true;
 
-    case CMD_DELETE: {
+    case CMD_DEL: {
         GET_KEY(key, 0);
 
         APPEND_LOG(0);
@@ -376,10 +447,6 @@ bool Client::ProcessCommand(const Command &cmd, yuki::SliceRef key,
         } else {
             AddIntegerReply(0);
         }
-    } return true;
-
-    case CMD_AUTH: {
-        // TODO
     } return true;
 
     case CMD_KEYS: {
