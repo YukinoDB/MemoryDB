@@ -3,10 +3,10 @@ os: posix
 repository:
 deps:
     - gtest:
-        version: 1.7.0
+        version: '1.7.0'
     - glog:
-        version: 0.3.4
+        version: '0.3.4'
     - gflags:
-        version: 2.1.2
+        version: '2.1.2'
     - yuki:
-        version: 0.1.5
+        version: '0.1.7'
