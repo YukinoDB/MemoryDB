@@ -6,7 +6,7 @@ compiler:
     - clang
 
 script:
-    - CDEP_PATH=cdep python cdep/cdep.py
+    - CC=clang CXX=clang++ CDEP_PATH=cdep python cdep/cdep.py
     - ls third-party/include
     - ls third-party/libs
     - cd src && make
