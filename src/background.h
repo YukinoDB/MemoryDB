@@ -5,6 +5,7 @@
 #include <mutex>
 #include <list>
 #include <atomic>
+#include <condition_variable>
 #include "yuki/slice.h"
 
 namespace yukino {

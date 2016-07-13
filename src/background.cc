@@ -29,7 +29,11 @@ void Background::AsyncRun() {
         Work work;
         is_running_.store(true);
 
+#if defined(__linux__)
+        pthread_setname_np(pthread_self(), "background");
+#else
         pthread_setname_np("background");
+#endif
         do {
             queue_->Take(&work);
             ProcessWork(&work);
