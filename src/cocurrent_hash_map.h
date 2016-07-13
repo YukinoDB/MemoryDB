@@ -25,7 +25,6 @@ public:
 
     struct Slot {
         RWSpinLock rwlock;
-        //pthread_rwlock_t rwlock;
         Node  *node;
     };
 

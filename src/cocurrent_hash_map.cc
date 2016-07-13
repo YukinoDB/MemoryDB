@@ -42,7 +42,7 @@ IteratorImpl::~IteratorImpl() {
 }
 
 bool IteratorImpl::Valid() const {
-    return node_ != nullptr;
+    return now_ < end_ && node_ != nullptr;
 }
 
 void IteratorImpl::SeekToFirst() {
