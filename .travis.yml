@@ -1,0 +1,13 @@
+language: cpp
+
+sudo: required
+
+compiler:
+    - clang
+
+script:
+    - CDEP_PATH=cdep python cdep/cdep.py
+    - ls third-party/include
+    - ls third-party/libs
+    - cd src && make
+    - src/all-test
