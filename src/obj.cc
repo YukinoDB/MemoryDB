@@ -1,4 +1,7 @@
 #include "obj.h"
+#include "key.h"
+#include "handle.h"
+#include "iterator.h"
 #include "value_traits.h"
 #include "serialized_io.h"
 
@@ -82,6 +85,18 @@ size_t ObjSerialize(Obj *ob, SerializedOutputStream *serializer) {
             }
         } break;
 
+        case YKN_HASH: {
+            auto hash = static_cast<Hash *>(ob)->stub();
+
+            std::unique_ptr<Iterator> iter(hash->iterator());
+            auto num = hash->num_keys();
+            size += serializer->WriteInt64(num);
+            for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+                size += serializer->WriteSlice(iter->key()->key());
+                size += ObjSerialize(iter->value(), serializer);
+            }
+        } break;
+
         default:
             DLOG(FATAL) << "noreached";
             return 0;
@@ -108,21 +123,43 @@ Obj *ObjDeserialize(SerializedInputStream *deserializer) {
             std::string stub;
             CALL(deserializer->ReadString(&value, &stub));
             return String::New(value);
-        }break;
+        } break;
 
         case YKN_LIST: {
-            std::unique_ptr<List> list(List::New());
+            auto list = List::New();
             uint32_t n;
             CALL(deserializer->ReadInt32(&n));
             while (n--) {
                 auto elem = ObjDeserialize(deserializer);
                 if (!elem) {
+                    list->~List();
+                    free(list);
                     return nullptr;
                 }
                 list->stub()->InsertTail(elem);
             }
-            return list.release();
-        }break;
+            return list;
+        } break;
+
+        case YKN_HASH: {
+            auto hash = Hash::New(Hash::DEFAULT_SIZE);
+            uint32_t n;
+            CALL(deserializer->ReadInt32(&n));
+
+            yuki::Slice key;
+            std::string stub;
+            while (n--) {
+                CALL(deserializer->ReadString(&key, &stub));
+
+                auto obj = ObjDeserialize(deserializer);
+                if (!obj) {
+                    hash->~Hash();
+                    free(hash);
+                }
+                hash->stub()->Put(key, 0, obj);
+            }
+            return hash;
+        } break;
 
         default:
             break;

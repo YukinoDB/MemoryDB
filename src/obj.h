@@ -2,6 +2,7 @@
 #define YUKINO_OBJ_H_
 
 #include "lockfree_list.h"
+#include "cocurrent_hash_map.h"
 #include "yuki/slice.h"
 #include "yuki/varint.h"
 #include "glog/logging.h"
@@ -18,6 +19,7 @@ enum ObjTy: uint8_t {
     YKN_STRING,
     YKN_INTEGER,
     YKN_LIST,
+    YKN_HASH,
 };
 
 struct Obj {
@@ -85,6 +87,8 @@ class List : public Obj {
 public:
     typedef LockFreeList<Obj*, ObjManaged> Stub;
 
+    ~List() { stub()->~Stub(); }
+
     inline Stub *stub();
 
     inline void Release();
@@ -92,6 +96,23 @@ public:
     static size_t PredictSize() { return sizeof(Stub) + sizeof(List); }
     static inline List *Build(void *buf, size_t size);
     static inline List *New();
+};
+
+class Hash : public Obj {
+public:
+    typedef CocurrentHashMap Stub;
+
+    enum { DEFAULT_SIZE = 13 };
+
+    ~Hash() { stub()->~Stub(); }
+
+    Stub *stub() { return reinterpret_cast<Stub *>(&raw + 1); }
+
+    inline void Release();
+
+    static size_t PredictSize() { return sizeof(Stub) + sizeof(List); }
+    static inline Hash *Build(void *buf, size_t size, int initial_size);
+    static inline Hash *New(int initial_size);
 };
 
 static_assert(sizeof(Obj) == sizeof(String), "Fixed String size.");
@@ -198,13 +219,12 @@ inline List::Stub *List::stub() {
 inline void List::Release() {
     if (std::atomic_fetch_sub_explicit(&ref_count, 1,
                                        std::memory_order_release) == 1) {
-        stub()->~Stub();
+        this->~List();
         free(this);
     }
 }
 
-/*static*/
-inline List *List::Build(void *buf, size_t size) {
+/*static*/ inline List *List::Build(void *buf, size_t size) {
     if (size < PredictSize()) {
         return nullptr;
     }
@@ -214,11 +234,34 @@ inline List *List::Build(void *buf, size_t size) {
     return static_cast<List *>(base);
 }
 
-/*static*/
-inline List *List::New() {
+/*static*/ inline List *List::New() {
     auto size = PredictSize();
     auto buf  = malloc(size);
     return Build(buf, size);
+}
+
+inline void Hash::Release() {
+    if (std::atomic_fetch_sub_explicit(&ref_count, 1,
+                                       std::memory_order_release) == 1) {
+        this->~Hash();
+        free(this);
+    }
+}
+
+/*static*/ inline Hash *Hash::Build(void *buf, size_t size, int initial_size) {
+    if (size < PredictSize()) {
+        return nullptr;
+    }
+
+    auto base = new (buf) Obj(YKN_HASH);
+    new (&base->raw + 1) Stub(initial_size);
+    return static_cast<Hash *>(base);
+}
+
+/*static*/ inline Hash *Hash::New(int initial_size) {
+    auto size = PredictSize();
+    auto buf  = malloc(size);
+    return Build(buf, size, initial_size);
 }
 
 } // namespace yukino

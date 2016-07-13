@@ -103,7 +103,7 @@ TEST_F(HashDBTest, AsyncPersistent) {
     conf.persistent = true;
     conf.memory_limit = 0;
 
-    std::unique_ptr<DB> db(new HashDB(conf, kDataDir, 0, 1023, queue_));
+    std::unique_ptr<DB> db(new HashDB(conf, kDataDir, 0, 102300, queue_));
     auto rv = db->Open();
     ASSERT_TRUE(rv.Ok()) << rv.ToString();
 
