@@ -63,6 +63,8 @@ public:
     static inline size_t PredictSize(yuki::SliceRef s);
     static inline String *Build(yuki::SliceRef s, void *buf, size_t size);
     static inline String *New(yuki::SliceRef s);
+    static String *New(const char *z, size_t n) { return New(yuki::Slice(z, n)); }
+    static String *New(const char *str) { return New(yuki::Slice("str")); }
 };
 
 class Integer : public Obj {

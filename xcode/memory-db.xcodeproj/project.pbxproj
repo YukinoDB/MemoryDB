@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		234513D51D364F1C004C0D18 /* hash_db-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 234513D41D364F1C004C0D18 /* hash_db-test.cc */; };
 		23C254C71D250EE5000B9159 /* main.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254C61D250EE5000B9159 /* main.cc */; };
 		23C254D41D250F84000B9159 /* all-test-main.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254D31D250F84000B9159 /* all-test-main.cc */; };
 		23C254D81D2510E0000B9159 /* sanity-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 23C254D71D2510E0000B9159 /* sanity-test.cc */; };
@@ -99,6 +100,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		234513D41D364F1C004C0D18 /* hash_db-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "hash_db-test.cc"; sourceTree = "<group>"; };
 		23C254B91D250E2C000B9159 /* yukinodb */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = yukinodb; sourceTree = BUILT_PRODUCTS_DIR; };
 		23C254C61D250EE5000B9159 /* main.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cc; path = ../src/main.cc; sourceTree = "<group>"; };
 		23C254CC1D250F1B000B9159 /* all-test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "all-test"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -306,6 +308,7 @@
 				23C619031D33359200E788C1 /* serialized_io-test.cc */,
 				23C619071D337C2400E788C1 /* bin_log-test.cc */,
 				23C619121D34C68500E788C1 /* background-test.cc */,
+				234513D41D364F1C004C0D18 /* hash_db-test.cc */,
 			);
 			name = Tests;
 			path = ../src;
@@ -420,6 +423,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23C618EF1D313D9300E788C1 /* basic_io.cc in Sources */,
+				234513D51D364F1C004C0D18 /* hash_db-test.cc in Sources */,
 				23C618EA1D310F2500E788C1 /* lockfree_ring_buffer-test.cc in Sources */,
 				23C255001D26C41E000B9159 /* cocurrent_hash_map.cc in Sources */,
 				23C255101D2AA15F000B9159 /* zmalloc.c in Sources */,

@@ -14,7 +14,7 @@
 
 namespace yukino {
 
-static const size_t kLogSizeForCheckpoint = 10UL * 1024UL * 1024UL;
+static const size_t kLogSizeForCheckpoint = 50UL * 1024UL * 1024UL;
 
 HashDB::HashDB(const DBConf &conf,
                const std::string &data_dir,
@@ -34,6 +34,13 @@ HashDB::HashDB(const DBConf &conf,
 }
 
 HashDB::~HashDB() {
+    if (is_saving_.load()) {
+        LOG(INFO) << "saving thread still running.";
+    }
+    if (saving_thread_.joinable()) {
+        saving_thread_.join();
+    }
+
     delete log_;
 
     if (log_fd_ >= 0) {
@@ -133,6 +140,9 @@ HashDB::AppendLog(int code, int64_t version,
         return Status::OK();
     }
 
+    if (saving_thread_.joinable()) {
+        saving_thread_.join();
+    }
     saving_thread_ = std::move(std::thread([&]() {
         is_saving_.store(true);
 
@@ -251,6 +261,7 @@ yuki::Status HashDB::DoCheckpoint(bool force) {
     }
 
     rv = CreateLogFile(new_version, &log_fd_);
+    log_->Reset(NewPosixFileOutputStream(log_fd_));
     version_ = new_version;
 
     if (rv.Failed()) {
@@ -280,6 +291,7 @@ yuki::Status HashDB::DoSave() {
 
     mutex_.lock();
     rv = CreateLogFile(new_version, &log_fd_);
+    log_->Reset(NewPosixFileOutputStream(log_fd_));
     version_ = new_version;
     mutex_.unlock();
 
@@ -328,7 +340,6 @@ yuki::Status HashDB::CreateLogFile(int version, int *fd) {
         return Status::Systemf("open %s fail", log_path.Get().c_str());
     }
 
-    log_->Reset(NewPosixFileOutputStream(log_fd_));
     return Status::OK();
 }
 
